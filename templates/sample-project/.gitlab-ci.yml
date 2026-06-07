@@ -1,0 +1,23 @@
+include:
+  - project: 'platform/ci-templates'
+    ref: main
+    file:
+      - '/templates/java-maven.yml'
+      - '/templates/docker-build.yml'
+      - '/templates/helm-deploy.yml'
+
+variables:
+  JAVA_VERSION: "21"
+  CHART_NAME: "demo-service"
+  MAVEN_OPTS: "-Xmx1024m -Dmaven.repo.local=.m2/repository"
+
+stages:
+  - build
+  - test
+  - docker
+  - deploy
+
+cache:
+  key: ${CI_COMMIT_REF_SLUG}
+  paths:
+    - .m2/repository/

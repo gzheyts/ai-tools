@@ -1,0 +1,50 @@
+replicaCount: 1
+
+image:
+  repository: registry.example.com/demo-service
+  pullPolicy: IfNotPresent
+  tag: ""
+
+service:
+  type: ClusterIP
+  port: 8080
+
+ingress:
+  enabled: false
+  className: nginx
+  hosts:
+    - host: demo-service.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+
+resources:
+  requests:
+    cpu: 200m
+    memory: 512Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health/liveness
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health/readiness
+    port: http
+  initialDelaySeconds: 10
+  periodSeconds: 5
+
+env:
+  JAVA_OPTS: "-Xmx768m -Xms256m"
+  SPRING_PROFILES_ACTIVE: "default"
+
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  readOnlyRootFilesystem: true

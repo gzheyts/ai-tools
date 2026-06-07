@@ -1,0 +1,31 @@
+{
+  "_comment": "Illustrative OpenCode agent config shape. See https://opencode.ai/docs/agents/ for your version. Copy and adapt outside this repo.",
+  "agent": {
+    "plan": {
+      "mode": "primary",
+      "description": "Senior lead: triage and plan only. Delegate read-only work to Explore/Scout. No application code edits.",
+      "permissions": {
+        "write": false,
+        "bash": "ask"
+      }
+    },
+    "build": {
+      "mode": "primary",
+      "description": "Implement approved plans, run mvn test, minimal diffs.",
+      "permissions": {
+        "write": true,
+        "bash": true
+      }
+    }
+  },
+  "subagent": {
+    "explore": {
+      "mode": "subagent",
+      "description": "Read-only map of Java packages and tests."
+    },
+    "general": {
+      "mode": "subagent",
+      "description": "Multi-step implementation after lead approval."
+    }
+  }
+}

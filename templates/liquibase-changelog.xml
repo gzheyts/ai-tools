@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<databaseChangeLog
+    xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+        https://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-latest.xsd">
+
+    <!--
+        Template: Liquibase Changelog
+        Naming: YYYY-MM-DD-NNN-description.xml
+        Place in: src/main/resources/db/changelog/changes/
+        Don't forget to include in db.changelog-master.xml
+    -->
+
+    <changeSet id="YYYY-MM-DD-NNN-description"
+               author="developer-name">
+
+        <preConditions onFail="MARK_RAN">
+            <!-- Add preconditions to prevent double-execution -->
+            <not>
+                <tableExists tableName="example_table"/>
+            </not>
+        </preConditions>
+
+        <!-- PostgreSQL types (Oracle alternatives in comments) -->
+        <createTable tableName="example_table">
+            <column name="id" type="UUID">
+                <!-- Oracle: RAW(16) -->
+                <constraints primaryKey="true" nullable="false"/>
+            </column>
+            <column name="name" type="VARCHAR(255)">
+                <!-- Oracle: VARCHAR2(255) -->
+                <constraints nullable="false"/>
+            </column>
+            <column name="description" type="TEXT">
+                <!-- Oracle: CLOB -->
+                <constraints nullable="true"/>
+            </column>
+            <column name="status" type="VARCHAR(50)">
+                <constraints nullable="false"/>
+            </column>
+            <column name="amount" type="NUMERIC(19,4)">
+                <!-- Oracle: NUMBER(19,4) -->
+                <constraints nullable="true"/>
+            </column>
+            <column name="is_active" type="BOOLEAN" defaultValueBoolean="true">
+                <!-- Oracle: NUMBER(1) DEFAULT 1 -->
+                <constraints nullable="false"/>
+            </column>
+            <column name="metadata" type="JSONB">
+                <!-- Oracle: CLOB with IS JSON check -->
+                <constraints nullable="true"/>
+            </column>
+            <column name="created_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="updated_at" type="TIMESTAMPTZ" defaultValueComputed="NOW()">
+                <constraints nullable="false"/>
+            </column>
+            <column name="deleted_at" type="TIMESTAMPTZ">
+                <constraints nullable="true"/>
+            </column>
+        </createTable>
+
+        <createIndex indexName="idx_example_table_status"
+                     tableName="example_table">
+            <column name="status"/>
+        </createIndex>
+
+        <rollback>
+            <dropIndex indexName="idx_example_table_status"
+                       tableName="example_table"/>
+            <dropTable tableName="example_table"/>
+        </rollback>
+    </changeSet>
+
+</databaseChangeLog>

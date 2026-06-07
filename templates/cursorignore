@@ -1,0 +1,30 @@
+# .cursorignore template
+# Copy this to your project root as .cursorignore
+# Prevents Cursor from reading, indexing, or sending these files to the LLM
+
+# Secrets and credentials
+.env
+.env.*
+**/secrets/
+**/credentials/
+**/*.key
+**/*.pem
+**/*.p12
+
+# Production configuration
+**/application-prod.yaml
+**/application-prod.properties
+**/terraform.tfvars
+
+# MCP config (contains connection strings)
+.cursor/mcp.json
+.opencode/mcp.json
+.codeassistant/mcp.json
+
+# Personal data / PII
+**/seed-data/
+**/fixtures/production/
+
+# IDE-specific
+.idea/
+*.iml
