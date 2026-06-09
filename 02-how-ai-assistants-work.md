@@ -15,7 +15,7 @@ Understanding these internals lets you:
 |---------|-------|
 | [1. The Agent Loop](#1-the-agent-loop) | Perceive → reason → act cycle |
 | [2. Tools](#2-tools----how-the-llm-acts-on-the-world) | Built-in tools, execution sequence, parallel calls |
-| [3. MCP](#3-mcp----model-context-protocol) | Architecture, integration with the agent loop |
+| [3. MCP](#3-mcp----model-context-protocol) | Plug-in protocol for external tools (see Section 13) |
 | [4. RAG](#4-rag----retrieval-augmented-generation) | Embed → retrieve → inject pipeline |
 | [5. Context Engineering](#5-context-engineering) | Window anatomy, token budget, context rot |
 | [6. Prompt Engineering](#6-prompt-engineering----the-users-layer) | Where your prompt fits in the layered model |
@@ -238,7 +238,7 @@ use tools that are not registered. Here is what Cursor provides:
 | Shell         | Execute a shell command                    | Arbitrary    |
 | ReadLints     | Read linter/compiler diagnostics           | None         |
 | Task          | Launch a subagent (see [Section 11](11-agents-subagents.md)) | Spawns agent |
-| CallMcpTool   | Call an MCP server tool (see section 3)    | Varies       |
+| CallMcpTool   | Call an MCP server tool (see Section 13)   | Varies       |
 
 OpenCode has equivalent tools with different names but
 the same fundamental categories: **read**, **search**, **edit**, **execute**,
@@ -308,7 +308,7 @@ The critical insight: **tool descriptions are the primary routing mechanism**.
 The model matches the semantics of what it needs against the `description`
 field of every available tool. This is why well-written MCP tool descriptions
 are essential -- a poorly described tool will never be selected, even if it
-is the perfect tool for the job. More on this in section 3.
+is the perfect tool for the job. More on this in [Section 13](13-mcp-servers.md).
 
 ### Parallel Tool Calls
 
@@ -348,35 +348,18 @@ loop iterations.
 MCP (Model Context Protocol) is an open standard for connecting **external
 capabilities** to your AI assistant without modifying the IDE itself.
 
-### The Problem MCP Solves
-
-Built-in tools are fixed by the vendor. MCP lets the assistant reach systems
-the IDE does not ship with, for example:
-
-- GitLab merge requests and blame history
-- Language-server symbol search (Serena, etc.)
-- Production or staging database schema inspection
-- Issue trackers and internal APIs
-
-### Architecture (three roles)
-
-| Component | What It Does |
-|-----------|--------------|
-| **Host** | The IDE (Cursor, OpenCode). Manages MCP clients. |
-| **Client** | One per server. Routes tool calls from the agent. |
-| **Server** | Separate process exposing tools/resources via JSON-RPC (stdio or SSE). |
+Built-in tools are fixed by the vendor. MCP provides a plug-in protocol
+so the assistant can reach systems the IDE does not ship with — language
+servers, databases, issue trackers, Git history, and more.
 
 MCP tools appear in the model's tool list **exactly like built-in tools**
-(Read, Grep, Shell, etc.). The agent loop does not distinguish them — the
-model picks the best-matching tool description on each iteration.
+(Read, Grep, Shell, etc.). The agent loop does not distinguish them; on each
+iteration the model picks the best-matching tool description. You can steer
+preferences in `AGENTS.md` (see [Section 8](08-agents-md.md)).
 
-You can steer preferences in `AGENTS.md` (e.g. "prefer Serena
-`find_referencing_symbols` over Grep for symbol references"). See
-[Section 8: AGENTS.md](08-agents-md.md).
-
-**Deep dive:** configuration, useful servers for Java, custom servers,
-security, and troubleshooting — [Section 13: MCP Servers](13-mcp-servers.md).
-
+**Full coverage** — architecture, agent-loop integration, tool resolution
+heuristics, parallel calls, failure modes, configuration, and custom servers —
+is in [Section 13: MCP Servers](13-mcp-servers.md).
 
 ---
 
@@ -698,7 +681,7 @@ This diagram shows every concept from this section:
 2. **Context engineering** (section 5) assembles the full context window
 3. **The agent loop** (section 1) iterates through tool calls
 4. **Built-in tools** (section 2) read and edit files
-5. **MCP tools** (section 3) provide semantic code analysis
+5. **MCP tools** ([Section 13](13-mcp-servers.md)) provide semantic code analysis
 6. **Your prompt** (section 6) drives the entire flow
 
 ---
@@ -725,6 +708,7 @@ This diagram shows every concept from this section:
 - Lewis et al.: *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks* (2020) -- original RAG paper
 - Liu et al.: *Lost in the Middle: How Language Models Use Long Contexts* (2023) -- U-shaped attention and context rot
 - Section 8: [AGENTS.md](08-agents-md.md) -- writing the project context layer
+- Section 13: [MCP Servers](13-mcp-servers.md) -- architecture, tool resolution, configuration
 - Section 11: [Agents & Subagents](11-agents-subagents.md) -- orchestrating multiple agent loops
 - Section 3: [Prompting](03-prompting.md) -- CO-STAR and 26 principles
 - Section 4: [Prompt Techniques](04-prompt-techniques.md) -- zero-shot, few-shot, chain-of-thought
@@ -817,46 +801,6 @@ with the concrete tool names the LLM can call at each stage.
 | `ReadLints`     | Observe  | Returns linter/compiler diagnostics for a file                |
 | `Task`          | Delegate | Spawns a subagent with its own fresh context window           |
 | `CallMcpTool`   | Extend   | Calls any tool from a connected MCP server                    |
-
----
-
-## MCP in Practice: Quick Lab Preview
-
-Here is what it looks like when an MCP server is configured and the agent
-uses it during a real task. This is a taste of what you will build in
-[Section 13: MCP Servers](13-mcp-servers.md).
-
-**Configuration** (in `.cursor/mcp.json`):
-```json
-{
-  "mcpServers": {
-    "postgres": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/persons_db"]
-    }
-  }
-}
-```
-
-**What the developer sees in chat:**
-
-```
-Developer: What columns does the persons table have?
-
-Agent:     [calls MCP tool: postgres.describe_table("persons")]
-           → The persons table has 5 columns:
-             id         BIGINT       PRIMARY KEY
-             first_name VARCHAR(100) NOT NULL
-             last_name  VARCHAR(100) NOT NULL
-             email      VARCHAR(255) UNIQUE
-             created_at TIMESTAMP    DEFAULT now()
-```
-
-The agent chose `describe_table` from the MCP server because its
-description matched the intent better than any built-in tool. No prompt
-engineering was needed — MCP tool descriptions drive selection
-automatically. See [Section 13](13-mcp-servers.md) for the full setup
-guide, custom server development, and advanced patterns.
 
 ---
 

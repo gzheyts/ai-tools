@@ -91,7 +91,7 @@ Complements [11-agents-subagents.md](11-agents-subagents.md) (assistant-agnostic
 | 10 | [10-custom-commands.md](10-custom-commands.md) | Custom commands |
 | 11 | [11-agents-subagents.md](11-agents-subagents.md) | Agents & subagents — see also [opencode-agent-patterns/README.md](opencode-agent-patterns/README.md) |
 | 12 | [12-agent-sessions.md](12-agent-sessions.md) | Agent sessions — lifecycle, child sessions, compaction, cross-session handoff |
-| 13 | [13-mcp-servers.md](13-mcp-servers.md) | MCP servers |
+| 13 | [13-mcp-servers.md](13-mcp-servers.md) | MCP architecture, tool resolution, configuration |
 
 ### Java & DevOps
 | # | File | Topic |
