@@ -3,14 +3,24 @@
 Before writing any AI configuration files, you need the tools installed
 and an understanding of how each assistant discovers and loads context.
 
+| Section | Topic |
+|---------|-------|
+| [Supported Assistants](#supported-assistants) | Config roots and CLI availability |
+| [1. Cursor Setup](#1-cursor-setup) | Install, directories, context loading order |
+| [2. OpenCode Setup](#2-opencode-setup) | Install, directories, CLI |
+| [3. AGENTS.md](#3-universal-file-agentsmd) | Universal cross-tool project context |
+| [4. Verify Setup](#4-verifying-your-setup) | Quick validation |
+| [Key Concepts](#key-concepts) | How assistants discover and load context |
+| [Anti-Patterns](#common-setup-anti-patterns) | Common configuration mistakes |
+
+---
+
 ## Supported Assistants
 
 | Assistant          | Config Root (project)   | Config Root (global)         | CLI Available |
 |--------------------|-------------------------|------------------------------|---------------|
 | Cursor             | `.cursor/`              | `~/.cursor/`                 | Yes (`cursor`) |
 | OpenCode           | `.opencode/`            | `~/.config/opencode/`        | Yes (`opencode`) |
-| Yandex SourceCraft | `.codeassistant/`       | `~/.codeassistant/`          | Yes (`codeassistant`) |
-
 ## 1. Cursor Setup
 
 ### Install Cursor
@@ -85,45 +95,20 @@ opencode "Review this code for security issues"
 opencode /test src/main/java/com/example/PersonService.java
 ```
 
-## 3. Yandex SourceCraft Setup
+## 3. Universal File: AGENTS.md
 
-### Install SourceCraft Code Assistant
-Install the IDE plugin from the JetBrains Marketplace or VS Code Extensions,
-or use the standalone CLI.
-
-### Key Directories
-```text
-your-project/
-├── .codeassistant/
-│   └── commands/         # Custom slash commands (.md files)
-└── AGENTS.md             # Universal project context
-```
-
-Global commands: `~/.codeassistant/commands/`.
-
-### CLI Usage
-```bash
-# Open project in SourceCraft context
-codeassistant --project /path/to/project
-
-# Execute a command
-codeassistant /review
-```
-
-## 4. Universal File: AGENTS.md
-
-All three assistants recognize `AGENTS.md` at the project root.
+Both assistants recognize `AGENTS.md` at the project root.
 This is the single most important file you will create -- it is loaded
 on every interaction and sets the "ground truth" for your project.
 
 ```text
 your-project/
-└── AGENTS.md    <-- loaded by Cursor, OpenCode, SourceCraft
+└── AGENTS.md    <-- loaded by Cursor, OpenCode
 ```
 
 You will learn to write this file in **Section 8**.
 
-## 5. Verifying Your Setup
+## 4. Verifying Your Setup
 
 Run this checklist before proceeding:
 
@@ -131,7 +116,7 @@ Run this checklist before proceeding:
 - [ ] You can access the terminal/CLI for your assistant
 - [ ] Your project has a `pom.xml` with Java 21 and Spring Boot 3.5+
 - [ ] Git is initialized in your project directory
-- [ ] You know where your assistant's config directory is (`.cursor/`, `.opencode/`, `.codeassistant/`)
+- [ ] You know where your assistant's config directory is (`.cursor/`, `.opencode/`)
 
 ## Key Concepts
 
@@ -161,28 +146,28 @@ Run this checklist before proceeding:
 
 ## Quick-Reference Cheat Sheet
 
-| Setting                | Cursor                          | OpenCode                         | SourceCraft                        |
-|------------------------|---------------------------------|----------------------------------|------------------------------------|
-| Config directory       | `.cursor/`                      | `.opencode/`                     | `.codeassistant/`                  |
-| Context file           | `AGENTS.md`                     | `AGENTS.md`                      | `AGENTS.md`                        |
-| Skills directory       | `.cursor/skills-cursor/` or `~/.agents/skills` | —                     | —                                  |
-| Commands directory     | `.cursor/commands/`             | `.opencode/commands/`            | `.codeassistant/commands/`         |
-| CLI launch command     | `cursor /path/to/project`       | `opencode`                       | `codeassistant --project /path`    |
-| Check version          | `cursor --version`              | `opencode --version`             | `codeassistant --version`          |
+| Setting                | Cursor                          | OpenCode                         |
+|------------------------|---------------------------------|----------------------------------|
+| Config directory       | `.cursor/`                      | `.opencode/`                     |
+| Context file           | `AGENTS.md`                     | `AGENTS.md`                      |
+| Skills directory       | `.cursor/skills-cursor/` or `~/.agents/skills` | —               |
+| Commands directory     | `.cursor/commands/`             | `.opencode/commands/`            |
+| CLI launch command     | `cursor /path/to/project`       | `opencode`                       |
+| Check version          | `cursor --version`              | `opencode --version`             |
 
 ## Common Setup Anti-Patterns
 
 **1. Not creating the config directory before starting work.**
-The assistant does not create `.cursor/`, `.opencode/`, or `.codeassistant/` for you.
+The assistant does not create `.cursor/` or `.opencode/` for you.
 If the directory is missing, rules, commands, and 09-skills.md have nowhere to live and the
 assistant operates with zero project-specific context. Always run `mkdir -p` as the
 very first step after cloning a repository.
 
 **2. Mixing config formats between tools.**
 Each assistant has its own file format: Cursor uses `.mdc` files for rules, OpenCode
-and SourceCraft use plain `.md` for commands. Copying a `.mdc` file into
-`.opencode/commands/` will not work — the assistant silently ignores it. Keep each
-tool's config directory clean and use only the format it expects.
+uses plain `.md` for commands. Copying a `.mdc` file into `.opencode/commands/`
+will not work — the assistant silently ignores it. Keep each tool's config directory
+clean and use only the format it expects.
 
 **3. Installing the IDE plugin but never configuring the CLI.**
 The CLI is where most power-user workflows live: scripted reviews, batch processing,

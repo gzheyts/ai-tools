@@ -1,4 +1,4 @@
-# Section 12: MCP Servers
+# Section 13: MCP Servers
 
 MCP (Model Context Protocol) extends your AI assistant with external tools and
 data sources. Instead of the assistant being limited to built-in tools like
@@ -9,13 +9,24 @@ This section explains the architecture, shows how to configure MCP servers in
 each assistant, lists the most useful servers for Java developers, and walks
 through writing a custom MCP server.
 
+| Section | Topic |
+|---------|-------|
+| [1. MCP Architecture](#1-mcp-architecture) | Host, client, server roles, transports |
+| [2. Configuring MCP Servers](#2-configuring-mcp-servers) | Cursor, OpenCode config |
+| [3. Useful Servers for Java](#3-useful-mcp-servers-for-java-developers) | Recommended servers, selection guide |
+| [4. Writing a Custom Server](#4-writing-a-custom-mcp-server) | Node.js and Python examples |
+| [5. Security Considerations](#5-mcp-security-considerations) | Permissions, trust, risks |
+| [6. Troubleshooting](#6-troubleshooting-mcp) | Common failures and fixes |
+
+---
+
 ## 1. MCP Architecture
 
 MCP follows a client-server model with three layers:
 
 ```text
 ┌─────────────────────────────────────────────────────┐
-│  MCP Host (Cursor / OpenCode / SourceCraft)         │
+│  MCP Host (Cursor / OpenCode)                       │
 │                                                     │
 │  ┌──────────────┐   ┌──────────────┐                │
 │  │  MCP Client  │   │  MCP Client  │   ...          │
@@ -80,24 +91,6 @@ Config file: `.cursor/mcp.json` (project-level) or `~/.cursor/mcp.json` (global)
 ### OpenCode
 
 Config file: `.opencode/mcp.json` or `~/.config/opencode/mcp.json`.
-
-```json
-{
-  "mcpServers": {
-    "postgres": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres"],
-      "env": {
-        "POSTGRES_URL": "postgresql://dev:dev@localhost:5432/mydb"
-      }
-    }
-  }
-}
-```
-
-### Yandex SourceCraft
-
-Config file: `.codeassistant/mcp.json`.
 
 ```json
 {
@@ -248,7 +241,7 @@ mcp.run()
 
 | Concept           | Summary                                                    |
 |--------------------|------------------------------------------------------------|
-| MCP Host           | The AI assistant (Cursor, OpenCode, SourceCraft)           |
+| MCP Host           | The AI assistant (Cursor, OpenCode)                        |
 | MCP Client         | One per server, managed by the host                        |
 | MCP Server         | External process exposing tools/resources                  |
 | stdio transport    | Server as child process, JSON over stdin/stdout            |
@@ -260,8 +253,10 @@ mcp.run()
 
 ---
 
-Proceed to [Section 6: Context](06-context.md)
-to learn how to manage what goes into the AI's context window.
+## Next Section
+
+Proceed to [Section 14: Java Production Stack](14-java-production-stack.md)
+to apply AI assistants to Java 21, Spring Boot, database, and DevOps workflows.
 
 ### Further Reading
 

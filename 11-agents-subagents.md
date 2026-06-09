@@ -5,6 +5,21 @@ complex, multi-step tasks. While a skill is a "verb" (one action) and a
 command is a "shortcut" (one prompt), an agent is a "person" -- a specialist
 with goals, tools, and the ability to plan and reason.
 
+| Section | Topic |
+|---------|-------|
+| [Skills vs. Commands vs. Agents](#skills-vs-commands-vs-agents) | Complexity spectrum |
+| [What Are Subagents?](#what-are-subagents) | Orchestrator pattern, benefits |
+| [Architecture](#architecture-the-orchestrator-pattern) | Orchestrator diagram |
+| [Built-In Subagent Types](#built-in-subagent-types) | Cursor, OpenCode built-ins |
+| [Designing Workflows](#designing-subagent-workflows-for-java-projects) | Feature, review, migration workflows |
+| [Best Practices](#best-practices) | Phase gates, verify gates, context passing |
+| [When NOT to Use Subagents](#when-not-to-use-subagents) | Four anti-patterns |
+| [Failure Patterns](#failure-patterns) | Parallel writers, doom loop, scope creep |
+| [Orchestrator Template](#orchestrator-template-with-error-handling) | Prompt templates per phase |
+| [OpenCode JSON Config](#opencode-json-agent-configuration) | Reviewer, migrator, tester agents |
+
+---
+
 ## Skills vs. Commands vs. Agents
 
 ```text
@@ -95,7 +110,19 @@ different parts of the codebase:
 
 ### OpenCode
 
-OpenCode supports custom agent definitions in its configuration:
+OpenCode has three built-in subagent types reachable via `@mention`:
+
+| Subagent | Mode | Best For |
+|----------|------|----------|
+| `@explore` | Read-only | Searching and mapping your codebase |
+| `@general` | Read/Write | Multi-step implementation and fixes |
+| `@scout` | Read-only (external) | Library docs, changelogs, upstream source via web search |
+
+**Explore vs Scout:** Use `@explore` when you need to map or search your own code.
+Use `@scout` when you need to understand a third-party library or look up something
+outside the repo. Scout requires network access (`web_search` tool).
+
+OpenCode also supports custom agent definitions in its configuration:
 
 ```json
 {
@@ -113,12 +140,6 @@ OpenCode supports custom agent definitions in its configuration:
   }
 }
 ```
-
-### SourceCraft
-
-SourceCraft uses agent roles defined in project configuration
-or via IDE settings. Consult your SourceCraft documentation for
-the latest configuration format.
 
 ## Designing Subagent Workflows for Java Projects
 
@@ -204,23 +225,113 @@ Parallel writes to the same file will cause conflicts.
 Subagents don't share context. If Subagent 2 needs results from
 Subagent 1, the orchestrator must pass that data explicitly.
 
-### 4. Choose the Right Model
+**What subagents do NOT see:**
+- Your full chat history (unless the primary explicitly pastes excerpts into the task prompt)
+- Other subagents' raw tool outputs (only what the orchestrator merges and relays)
+- Implicit conventions (must be in `AGENTS.md` or the delegation prompt)
+
+**What flows between sessions:**
+
+| Direction | Content |
+|-----------|---------|
+| Orchestrator → Subagent | Task prompt: goal, file paths, constraints, return format |
+| Subagent → Orchestrator | Final text summary only (findings, files changed, commands run) |
+| Orchestrator → You | Synthesized report + recommendations |
+
+Put file paths, acceptance criteria, and expected return format in every delegation prompt.
+The subagent cannot recover missing context from the parent conversation.
+
+### 4. Use Phase Gates and Verify Gates
+
+A **phase gate** is a checkpoint where you review a subagent's output and explicitly
+approve before the next phase starts. Nothing proceeds until you say so.
+
+A **verify gate** is a mandatory build/test run after any implementation. The actual
+output — `Tests run: N, Failures: 0` where N ≥ 1 — must appear in the summary before
+you accept the work. "Tests should pass" is not a passing verify gate.
+
+### 5. Choose the Right Model
 - Complex reasoning (architecture, planning): Use the most capable model
 - Simple tasks (search, formatting): Use the fastest model
 - Cost optimization: Mix models based on task complexity
 
-### 5. Validate After Every Write Phase
+### 6. Validate After Every Write Phase
 Always run tests and linters after implementation subagents finish.
 Don't assume code compiles or tests pass.
 
-## When NOT to Use Subagents
+## Failure Patterns
 
-- Simple, single-file changes (use a command instead)
-- Quick questions about the codebase (use the main agent)
-- Tasks that require seeing all context at once (use the main agent)
+Common ways multi-agent workflows break, and how to recover. See
+[When NOT to Use Subagents](#when-not-to-use-subagents) below for detailed
+anti-patterns before delegating.
 
-Subagents shine when the task is complex, multi-step, and benefits
-from specialization or parallelization.
+### Parallel writers on the same file
+
+**What happens:** Two subagents edit the same file concurrently. The second write
+silently overwrites the first — one agent's changes are lost without any error.
+
+**Recovery:** Never parallelize implementers on the same file. If it happened, revert
+(`git checkout -- <file>`), then run implement steps sequentially with one worker per file.
+
+### Doom loop
+
+**What happens:** The agent runs the same failing command (e.g. `mvn test`) three or
+more times without changing state. No new information enters the loop; token cost grows
+quadratically with each step. See [12-agent-sessions.md](12-agent-sessions.md) for the token
+accumulation mechanics.
+
+**Recovery:** Interrupt the agent. Send a stop message:
+
+```text
+Stop. Summarize what you tried, what failed, and what you need from me.
+Do not run more commands until I reply.
+```
+
+Then restart with a tighter scope: one file, one failing test, an explicit constraint
+on which method to fix.
+
+### Scope creep
+
+**What happens:** A vague "fix the build" or "fix the project" prompt lets the agent
+broaden scope — it edits `pom.xml`, bumps dependencies, or touches unrelated modules
+without your approval.
+
+**Recovery:** Reject and revert the unexpected files. Re-run with an explicit file
+constraint (`edit PersonServiceImpl.java only; do not change pom.xml`).
+
+**Prevention:** Pair every implement phase with a scope audit: `@explore read-only`
+on `git diff` output before you accept the work.
+
+### Skipping the verify gate
+
+**What happens:** The agent says "tests should pass" or "the fix looks correct" but
+provides no actual test output. You cannot confirm green without the literal Surefire
+line.
+
+**Recovery:** Reject. Require verbatim output:
+
+```text
+Run the tests now. Paste the "Tests run / Failures" line. Do not claim success without output.
+```
+
+### Stop conditions
+
+Take back control immediately when:
+
+1. Public API changed without ticket approval
+2. Security-sensitive paths (auth, credentials, tokens) touched without explicit scope
+3. A test was "fixed" by deleting or commenting out an assertion
+4. `pom.xml` or build files changed without ask
+5. The agent loops after two failed verifies — debug locally
+
+**Detecting a public API change:**
+
+```bash
+git diff HEAD -- '**/src/main/**/*.java' | grep '^[+-].*public '
+```
+
+Signals to block on: changed method signature, removed public method, new checked
+exception added to an existing method.
 
 ## Orchestrator Template with Error Handling
 
@@ -451,5 +562,10 @@ from parallel work, use subagents.
 
 ## Next Section
 
-Proceed to [Section 13: Java Production Stack](13-java-production-stack.md) to learn
-how to apply these patterns to Java 21, Spring Boot, database, and DevOps workflows.
+Proceed to [Section 12: Agent Sessions](12-agent-sessions.md) to learn
+session lifecycle, child sessions, compaction, and cross-session handoff.
+
+### Further Reading
+
+- [14-java-production-stack.md](14-java-production-stack.md) — Java 21, Spring Boot, database, and DevOps workflows
+- [opencode-agent-patterns/README.md](opencode-agent-patterns/) — OpenCode-specific orchestration: Plan/Build primaries, Explore/General/Scout, worked workflows

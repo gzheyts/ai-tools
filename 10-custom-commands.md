@@ -4,13 +4,25 @@ Custom commands are markdown files that you trigger by typing `/command-name`
 in your AI assistant's chat. They are the fastest way to automate repetitive
 tasks -- one keystroke launches a predefined prompt.
 
+| Section | Topic |
+|---------|-------|
+| [Commands vs. Skills](#commands-vs-skills) | Trigger, discovery, and scope comparison |
+| [Where to Place Commands](#where-to-place-commands) | Project-level and global paths per tool |
+| [Format by Assistant](#format-by-assistant) | Cursor, OpenCode syntax |
+| [Practical Commands for Java](#practical-commands-for-java-development) | `/review`, `/test`, `/endpoint`, `/migration` |
+| [Tips for Effective Commands](#tips-for-effective-commands) | Focus, context, testing, sharing |
+| [Command Design Patterns](#command-design-patterns) | Scaffolding, analysis, migration, debug, docs |
+| [Argument Handling](#argument-handling-across-tools) | How arguments work per assistant |
+
+---
+
 ## Commands vs. Skills
 
 | Feature          | Skill (SKILL.md)             | Command (.md file)          |
 |------------------|------------------------------|-----------------------------|
 | Triggered by     | AI decides automatically     | User types `/name`          |
 | Discovery        | AI reads description         | Listed in `/` menu          |
-| Arguments        | No (context from chat)       | Yes (OpenCode, SourceCraft) |
+| Arguments        | No (context from chat)       | Yes (OpenCode)              |
 | Frontmatter      | Required (name, description) | Optional (depends on tool)  |
 | Best for         | Complex, multi-step tasks    | Quick, focused actions      |
 
@@ -20,7 +32,6 @@ tasks -- one keystroke launches a predefined prompt.
 |--------------|---------------------------|-------------------------------|
 | Cursor       | `.cursor/commands/`       | `~/.cursor/commands/`        |
 | OpenCode     | `.opencode/commands/`     | `~/.config/opencode/commands/`|
-| SourceCraft  | `.codeassistant/commands/`| `~/.codeassistant/commands/` |
 
 The filename (minus `.md`) becomes the command name:
 - `code-review.md` -> `/code-review`
@@ -113,26 +124,6 @@ Use these conventions:
 
 Current test dependencies (from pom.xml):
 !`grep -A2 'test' pom.xml | head -20`
-```
-
-### SourceCraft Commands
-
-SourceCraft supports **YAML frontmatter** with description and argument hints.
-
-**Example: `.codeassistant/commands/review.md`**
-```markdown
----
-description: Review Java/Spring Boot code for issues
-argument-hint: <file-or-class-name>
----
-
-Review the specified code for architecture violations, security issues,
-and Java 21 best practices. Follow the conventions from AGENTS.md.
-
-Output format:
-- **Critical**: Must fix
-- **Warning**: Should fix
-- **Suggestion**: Nice to have
 ```
 
 ## Practical Commands for Java Development
@@ -241,7 +232,7 @@ After creating a command:
 Since commands live in the project directory, they are versioned with
 your code. The entire team gets the same commands:
 ```bash
-git add .cursor/commands/ .opencode/commands/ .codeassistant/commands/
+git add .cursor/commands/ .opencode/commands/
 git commit -m "Add AI assistant custom commands for team workflows"
 ```
 
@@ -520,31 +511,6 @@ Usage:
 /migration add email column to persons table
 ```
 
-### SourceCraft
-
-SourceCraft uses `argument-hint` in frontmatter to prompt the user
-for input.
-
-**`.codeassistant/commands/migration.md`**
-```markdown
----
-description: Generate a Liquibase changeset from a schema change description
-argument-hint: <describe the schema change, e.g. "add email column to persons table">
----
-
-Generate a Liquibase XML changelog for the requested schema change.
-
-Requirements:
-- XML format, Liquibase 4.x schema
-- Include <rollback> for every <changeSet>
-- PostgreSQL-compatible types
-- File name: YYYY-MM-DD-NNN-description.xml
-```
-
-Usage:
-```
-/migration add email column to persons table
-```
 
 ## Quick-Reference Cheat Sheet
 

@@ -13,7 +13,6 @@
 # MCP config (contains connection strings)
 .cursor/mcp.json
 .opencode/mcp.json
-.codeassistant/mcp.json
 
 # IDE-specific
 .idea/

@@ -7,7 +7,7 @@ assistants effectively with our projects.
 
 ### Install Your AI Assistant
 
-- [ ] Install [Cursor](https://cursor.sh/) / OpenCode / Yandex SourceCraft
+- [ ] Install [Cursor](https://cursor.sh/) / OpenCode
 - [ ] Verify the CLI works: `cursor --version` (or equivalent)
 - [ ] Configure the model (recommended: Claude Sonnet for daily work)
 
@@ -90,6 +90,6 @@ To improve a skill, command, or AGENTS.md:
 
 ## 5. Resources
 
-- Notes modules: `notes/modules/`
-- Sample project: `notes/solutions/sample-project/`
-- Templates: `notes/templates/`
+- Course index: [README.md](../README.md)
+- Sample project: [templates/sample-project/](sample-project/)
+- Reusable templates: [templates/](.)

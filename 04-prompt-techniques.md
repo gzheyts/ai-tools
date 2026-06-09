@@ -20,6 +20,30 @@ to a multi-perspective architecture review (ask-me-anything).
 All examples in this section use the same Java 21 / Spring Boot 3.5 / Spring
 Data JDBC stack described in the course's Target Stack.
 
+| Section | Topic |
+|---------|-------|
+| [Anatomy of a Prompt](03-prompting.md#anatomy-of-an-effective-prompt) | Role, Task, Context, Format (Section 3) |
+| [Five Universal Principles](#five-universal-principles) | Core rules for every prompt |
+| [Zero-Shot](#zero-shot-prompting) | Task only, no examples |
+| [One-Shot](#one-shot-prompting) | One example to guide format |
+| [Few-Shot](#few-shot-prompting) | Multiple examples for pattern |
+| [Chain-of-Thought](#chain-of-thought-prompting) | Step-by-step reasoning |
+| [Zero-Shot CoT](#zero-shot-cot) | "Think step by step" |
+| [Self-Consistency](#self-consistency) | Sample multiple reasoning paths |
+| [Tree of Thoughts](#tree-of-thoughts-tot) | Explore multiple reasoning branches |
+| [ReAct](#react) | Interleaved reasoning and action |
+| [Prompt Chaining](#prompt-chaining) | Output feeds next prompt |
+| [Ask-Me-Anything (AMA)](#ask-me-anything-ama-prompting) | Model asks clarifying questions |
+| [Least-to-Most](#least-to-most-prompting) | Decompose into sub-problems |
+| [Directional Stimulus](#directional-stimulus-prompting) | Hint to guide output direction |
+| [Combining Techniques](#combining-techniques-real-world-patterns) | Real-world mix patterns |
+| [Generic Technique Combinations](#generic-technique-combinations) | Pairwise technique combos |
+| [Choosing the Right Technique](#choosing-the-right-technique) | Decision framework |
+| [Output Contracts](#output-contracts) | Structure, XML delimiters, verification |
+| [Model-Specific Tips](#model-specific-tips) | Claude, GPT, reasoning models |
+| [Anti-Patterns](#anti-patterns-to-avoid) | 7 common mistakes |
+| [Advanced Patterns](#advanced-and-production-patterns) | RAG, caching, versioning |
+
 ---
 
 ### Why it matters
@@ -33,98 +57,9 @@ A poorly written prompt of the same underlying intent can drop accuracy by 30–
 
 ---
 
-## Anatomy of an Effective Prompt
-
-Every effective prompt has four building blocks. Think of this as the **4-Block Framework** (also known as TCOF: Task, Context, Output, Format).
-
-```text
-┌─────────────────────────────────────────────────────────┐
-│  ROLE       Who the model should act as                 │
-│  TASK       What exactly you want done                  │
-│  CONTEXT    Background, constraints, relevant data      │
-│  FORMAT     The exact shape of the output               │
-└─────────────────────────────────────────────────────────┘
-```
-
-### Role
-
-Define who the model should act as. Be specific — not "assistant" but the actual expert persona relevant to the task.
-
-```
-# Bad
-You are a helpful assistant.
-
-# Good
-You are a senior Java backend engineer specializing in Spring Boot
-and distributed systems. You write production-grade code following
-Clean Code principles and always consider thread safety.
-```
-
-A well-defined role primes the model's "mental frame" for the entire conversation. Skip generic openers like "you are a helpful assistant" — they add noise without value.
-
-### Task
-
-State precisely what you want done. Include:
-- The specific action (analyze, generate, refactor, classify, summarize)
-- The target audience, if relevant
-- Scope and scale (how many items, how many words)
-- Edge cases that must be handled
-
-```
-# Bad
-Write a summary.
-
-# Good
-Write a 3-sentence executive summary of the following customer
-complaint. Audience: non-technical product managers. Highlight
-the reported issue, the business impact, and the requested resolution.
-```
-
-### Context
-
-Give the model the information it needs that it cannot infer. This includes:
-- Domain-specific data or constraints
-- Prior decisions already made
-- What the user has already tried
-- What is out of scope
-
-Keep context relevant. Every irrelevant sentence competes with the useful ones for the model's attention.
-
-### Output Format
-
-Pin the exact shape of the response. Ambiguity here is the single most common cause of inconsistent outputs.
-
-```
-# Bad
-Return the result.
-
-# Good
-Return a JSON object with this exact schema:
-{
-  "severity": "low" | "medium" | "high",
-  "summary": string,          // max 20 words
-  "action_items": string[]    // ordered by priority
-}
-Do not include any text outside the JSON block.
-```
-
-### Full example using the 4-Block Framework
-
-```
-You are a senior code reviewer with 10 years of Java experience.  ← ROLE
-
-Review the following Java method for correctness, performance,
-and thread safety. Focus on issues a junior developer would miss.  ← TASK
-
-The method runs inside a high-throughput REST API (10k req/s).
-The team uses Java 21 and follows Effective Java guidelines.        ← CONTEXT
-
-Return your review as a markdown list with three sections:
-## Issues (critical problems that must be fixed)
-## Suggestions (improvements worth considering)
-## Positives (what was done well)
-Each bullet: one sentence max, include line number if applicable.   ← FORMAT
-```
+Every technique example below uses **Role / Task / Context / Format**.
+For the full 4-Block framework, CO-STAR mapping, and worked examples, see
+[Section 3: Anatomy of an Effective Prompt](03-prompting.md#anatomy-of-an-effective-prompt).
 
 ---
 
@@ -1749,10 +1684,11 @@ method, and a thin controller.
 
 ---
 
-## Combining Techniques
+## Generic Technique Combinations
 
 The techniques above are not mutually exclusive. Combining them unlocks
-the most powerful prompting patterns.
+powerful prompting patterns. For Java/Spring production examples, see
+[Combining Techniques: Real-World Patterns](#combining-techniques-real-world-patterns).
 
 ### Few-Shot + Chain-of-Thought
 
@@ -2398,8 +2334,9 @@ START
 
 ## Combining Techniques: Real-World Patterns
 
-The techniques from this section are building blocks. Combining them
-produces the most powerful prompting patterns for real development tasks.
+Production-oriented combinations for Java/Spring workflows. For generic
+pairings (Few-Shot + CoT, AMA + CoT, etc.), see
+[Generic Technique Combinations](#generic-technique-combinations).
 
 ### Pattern 1: Few-Shot + CoT for Liquibase Migrations
 

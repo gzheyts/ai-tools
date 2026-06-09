@@ -1,17 +1,27 @@
-# Section 15: Security & Privacy
+# Section 16: Security & Privacy
 
 AI coding assistants send code and context to external LLM providers.
 Understanding what data leaves your machine, how to limit exposure, and how
 to review AI-generated code for security issues is essential for teams
 working with sensitive codebases.
 
+| Section | Topic |
+|---------|-------|
+| [1. What Data Leaves Your Machine](#1-what-data-leaves-your-machine) | Cloud vs. local, what is and isn't sent |
+| [2. Data Policies by Assistant](#2-data-policies-by-assistant) | Training, retention, compliance |
+| [3. Protecting Sensitive Code](#3-protecting-sensitive-code) | `.cursorignore`, access scoping |
+| [4. Prompt Injection Risks](#4-prompt-injection-risks) | Attack vectors, defense patterns |
+| [5. AI-Generated Code Security Review](#5-ai-generated-code-security-review) | Checklist, common mistakes |
+| [6. Compliance Considerations](#6-compliance-considerations) | Regulations, compliance checklist |
+
+---
+
 ## 1. What Data Leaves Your Machine
 
 ### Cloud-Based Assistants
 
-When you use a cloud-based AI assistant (Cursor, OpenCode with cloud models,
-SourceCraft with cloud models), the following data is sent to the LLM
-provider:
+When you use a cloud-based AI assistant (Cursor, OpenCode with cloud models),
+the following data is sent to the LLM provider:
 
 | Data Sent                      | When                                       |
 |--------------------------------|--------------------------------------------|
@@ -45,13 +55,13 @@ machine. However:
 
 ## 2. Data Policies by Assistant
 
-| Feature                        | Cursor                | OpenCode              | SourceCraft           |
-|--------------------------------|-----------------------|-----------------------|-----------------------|
-| Data used for training?        | No (business/pro)     | Depends on provider   | No                    |
-| Data retention                 | Per their policy      | Per LLM provider      | Per Yandex policy     |
-| SOC 2 compliance               | Yes                   | N/A (self-hosted OK)  | Check current status  |
-| Self-hosted option             | No                    | Yes (any LLM backend) | No                    |
-| Privacy mode                   | Yes (disables telemetry) | Full control       | Check settings        |
+| Feature                        | Cursor                | OpenCode              |
+|--------------------------------|-----------------------|-----------------------|
+| Data used for training?        | No (business/pro)     | Depends on provider   |
+| Data retention                 | Per their policy      | Per LLM provider      |
+| SOC 2 compliance               | Yes                   | N/A (self-hosted OK)  |
+| Self-hosted option             | No                    | Yes (any LLM backend) |
+| Privacy mode                   | Yes (disables telemetry) | Full control       |
 
 **Important:** These policies change. Always check the current version of
 each assistant's privacy documentation before making compliance decisions.
@@ -358,10 +368,9 @@ All three major assistants support ignore files — but they are different:
 |-----------|-------------|-------|
 | Cursor | `.cursorignore` | Excludes from indexing and context |
 | OpenCode | `.opencodeignore` | Excludes from file reads and search |
-| SourceCraft | `.codeassistantignore` | Excludes from indexing |
 
-Keep all three in sync. A practical approach: maintain a single
-`.aiignore` file and symlink or copy it to all three names in your
+Keep both in sync. A practical approach: maintain a single
+`.aiignore` file and symlink or copy it to both names in your
 repository setup script.
 
 ## Quick-Reference Cheat Sheet
@@ -369,7 +378,7 @@ repository setup script.
 | Topic                    | Key Action                                          |
 |--------------------------|-----------------------------------------------------|
 | Data exposure            | Know what's sent: prompts, files, tool results      |
-| `.cursorignore`          | Exclude secrets, prod configs, proprietary code; replicate for `.opencodeignore` / `.codeassistantignore` |
+| `.cursorignore`          | Exclude secrets, prod configs, proprietary code; replicate for `.opencodeignore` |
 | Prompt injection (direct) | Never paste attacker-controlled text into prompts  |
 | Prompt injection (indirect) | Restart session after reading untrusted content; use read-only/no-write modes for reviews |
 | Injection resistance     | Add a "Security Boundary" block to `AGENTS.md` that explicitly limits write paths and outbound calls |
@@ -388,10 +397,10 @@ using AI assistants effectively, securely, and as a team.
 
 ### Further Reading
 
-- [Section 12: MCP Servers](12-mcp-servers.md) for MCP security configuration
+- [Section 13: MCP Servers](13-mcp-servers.md) for MCP security configuration
 - [Section 6: Context](06-context.md) for controlling
   what enters the context window
 - [Section 8: AGENTS.md](08-agents-md.md) for project-level rules that
   reinforce security conventions
-- [Section 14: Team Collaboration](14-team-collaboration.md) for team-wide
+- [Section 15: Team Collaboration](15-team-collaboration.md) for team-wide
   AI security practices

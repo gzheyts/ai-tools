@@ -5,6 +5,20 @@ Skills are modular, reusable instruction packages that AI assistants load
 Unlike `AGENTS.md` (always loaded), skills save context tokens by activating
 only when relevant.
 
+| Section | Topic |
+|---------|-------|
+| [What is a Skill?](#what-is-a-skill) | On-demand instruction packages |
+| [The SKILL.md Specification](#the-skillmd-specification) | File structure, placement per tool |
+| [Anatomy of a SKILL.md](#anatomy-of-a-skillmd) | Required fields, optional fields, body |
+| [Skill Design Principles](#skill-design-principles) | One job, description as trigger, output format |
+| [Skill vs. AGENTS.md vs. Command](#skill-vs-agentsmd-vs-command) | When to use which |
+| [Prompting Tips](#prompting-tips-for-skills) | Writing effective skill instructions |
+| [Bad vs. Good Design](#bad-vs-good-skill-design-annotated-examples) | Annotated examples |
+| [Skill Testing Strategy](#skill-testing-strategy) | Smoke, edge case, regression, A/B |
+| [Decision Matrix](#skills-vs-agentsmd-vs-commands-decision-matrix) | Choosing the right tool |
+
+---
+
 ## What is a Skill?
 
 A skill is a folder containing a `SKILL.md` file with:
@@ -43,7 +57,6 @@ skills/
 |--------------|-----------------------------|------------------------------|
 | Cursor       | `.cursor/skills-cursor/`    | `~/.agents/skills`         |
 | OpenCode     | `.opencode/skills`         | `~/.config/opencode/skills` |
-| SourceCraft  | `.codeassistant/skills`    | `~/.codeassistant/skills`   |
 | Universal    | `skills/` (project root)    | varies by tool               |
 
 ## Anatomy of a SKILL.md
@@ -76,7 +89,6 @@ license: MIT
 compatibility:
   - cursor
   - opencode
-  - sourcecraft
 allowed-tools:
   - read_file
   - search

@@ -1,12 +1,11 @@
-# Agentic Workflows for Java Developers (OpenCode)
+# OpenCode Agent Patterns
 
-Part of [ai-tools](../README.md) — personal notes on AI coding assistants for Java developers.
+OpenCode-specific companion to [11-agents-subagents.md](../11-agents-subagents.md),
+[12-agent-sessions.md](../12-agent-sessions.md), and [06-context.md](../06-context.md).
 
 An **agentic workflow** is **you + a primary agent (Build or Plan) + subagents (General, Explore, Scout)** in **[OpenCode](https://opencode.ai)**.
 
 Practice orchestration on [../templates/sample-project/](../templates/sample-project/) — not one chat doing everything alone.
-
-**Audience:** Java developer. Maven/JUnit fluent. Wants repeatable multi-agent workflows on real services.
 
 ---
 
@@ -14,11 +13,11 @@ Practice orchestration on [../templates/sample-project/](../templates/sample-pro
 
 | Concept | Description |
 |------|-------------|
-| [Agent Model](#section-0a-agent-model-primary-subagent-agentic-workflow) | Primary vs subagent vs agentic workflow |
-| [How workflow executes](#section-0b-how-agentic-workflow-executes-opencode-internals) | Execution internals, parallel agents, context |
-| [Commands and skills](#section-0c-commands-skills-and-agentsmd-opencode) | `/commands`, SKILL.md, AGENTS.md |
-| [Token efficiency](#section-0d-token-efficiency-and-doom-loop-prevention) | Doom loops, `steps` limit |
-| [Orchestration principles](#section-0e-orchestration-principles) | Phase gates, verify gates, work-splitting |
+| [Agent Model](#agent-model) | Primary vs subagent vs agentic workflow |
+| [Workflow Execution](#workflow-execution) | Execution internals, parallel agents, context |
+| [Commands, Skills, and AGENTS.md](#commands-skills-and-agentsmd) | `/commands`, SKILL.md, AGENTS.md |
+| [Token Efficiency](#token-efficiency-and-doom-loop-prevention) | Doom loops, `steps` limit |
+| [Orchestration Principles](#orchestration-principles) | Phase gates, verify gates, work-splitting |
 
 Optional: skim [tools/opencode-reference.md](tools/opencode-reference.md) (cheat sheet) and [tools/opencode-ecosystem.md](tools/opencode-ecosystem.md) (Java skills install).
 
@@ -28,11 +27,11 @@ Optional: skim [tools/opencode-reference.md](tools/opencode-reference.md) (cheat
 
 | Section | Topic |
 |---------|-------|
-| [1: Parallel triage](#section-1-parallel-triage-red-build) | Red build — parallel explore + bash + diagnose |
-| [2: Refactor pipeline](#section-2-refactor-pipeline-sequential-agents) | Plan → implement → verify |
-| [3: PR-ready workflow](#section-3-pr-ready-workflow-ci-log-verify) | CI log → diagnose → fix → verify |
-| [4: Full orchestration](#section-4-full-orchestration-one-session) | End-to-end session |
-| [5: Anti-patterns](#section-5-anti-patterns-when-agents-fail-you) | Failure patterns and recovery |
+| [Parallel Triage](#parallel-triage-red-build) | Red build — parallel explore + bash + diagnose |
+| [Refactor Pipeline](#refactor-pipeline) | Plan → implement → verify |
+| [PR-Ready Workflow](#pr-ready-workflow) | CI log → diagnose → fix → verify |
+| [Full Orchestration](#full-orchestration) | End-to-end session |
+| [Anti-Patterns](#anti-patterns) | Failure patterns and recovery |
 
 ---
 
@@ -63,40 +62,13 @@ mvn test -Dtest=PersonServiceImplTest   # 1 failure until fixed
 
 You already write Java. This section is **how to run a team of agents**, not how to code.
 
-### Primary path
-
-| Resource | Use |
-|----------|-----|
-| [Section 0a: Agent model](#section-0a-agent-model-primary-subagent-agentic-workflow) | Primary vs subagent vs agentic workflow |
-| [Section 0b: How workflow executes](#section-0b-how-agentic-workflow-executes-opencode-internals) | Step-by-step execution, parallel agents, context exchange |
-| [Section 0c: Commands and skills](#section-0c-commands-skills-and-agentsmd-opencode) | `/commands`, SKILL.md, AGENTS.md |
-| [Section 0d: Token efficiency](#section-0d-token-efficiency-and-doom-loop-prevention) | Doom loops, `steps` limit, cost control |
-| [tools/opencode-reference.md](tools/opencode-reference.md) | One-page OpenCode cheat sheet |
-| [tools/opencode-ecosystem.md](tools/opencode-ecosystem.md) | Community skills, MCP, links |
-| [Section 1](#section-1-parallel-triage-red-build) through [Section 5](#section-5-anti-patterns-when-agents-fail-you) | Workflow sections (triage → full orchestration) |
-| [playbooks/](playbooks/) | Copy-paste for red build, refactor, PR, hotfix |
-| [templates/](templates/) | Customizable workflow templates |
+See [Core Concepts](#core-concepts), [Workflow sections](#workflow-sections), and [Resources](#resources) at the top.
 
 ### 0.1 Agent model
 
-| Term | Meaning |
-|------|---------|
-| **Primary agent** | Main assistant (**Build** or **Plan**). Switch with **Tab**. Owns the conversation. |
-| **Subagent** | Specialist (**General**, **Explore**, **Scout**). Primary delegates or you **@mention**. |
-| **Agentic workflow** | You + primary + subagent(s) + verify gates + your approvals. |
-
 A **subagent is not** the primary. Each subagent runs in a **child session** with isolated context.
 
-| Primary | Use |
-|---------|-----|
-| **Plan** | Triage, design, plan-only — avoid unintended edits |
-| **Build** | Implement, run `mvn test`, apply approved refactor |
-
-| Subagent | Use |
-|----------|-----|
-| **Explore** | Read-only codebase map |
-| **General** | Multi-step work; edits after approval |
-| **Scout** | Read-only breadth recon, external docs |
+Full agent model: [Agent Model](#agent-model).
 
 ### Orchestration patterns
 
@@ -119,32 +91,9 @@ flowchart LR
   impl --> verify
 ```
 
-### Sequential plan → implement (OrderService)
+### Sequential plan → implement
 
-**Message 1 — Plan primary, plan only**
-
-```text
-@general PLAN ONLY — no file edits.
-
-Repo: <project_root>/templates/sample-project
-Target: PersonServiceImpl.java
-
-Extract a shared fetchOrThrow helper used by both findById and update; keep existing behavior.
-Return method signatures and call sites; do not edit files.
-```
-
-**Message 2 — after you approve (Tab to Build)**
-
-```text
-Build primary — implement the approved OrderService plan below:
-
-<paste approved plan>
-
-Run mvn test -Dtest=OrderServiceTest then full mvn test.
-Return: files changed, test output.
-```
-
-Section reference: [Section 2: Refactor pipeline](#section-2-refactor-pipeline-sequential-agents)
+Full worked example with orchestration prompts, plan approval guidance, and review checklist: [Refactor Pipeline](#refactor-pipeline).
 
 ### Review checklist
 
@@ -158,7 +107,7 @@ Before you accept agent work as PR-ready:
 
 ### Anti-patterns (short)
 
-Parallel **writers** on one file; implement before plan approval; skipping verify after General. Full list: [Section 5: Anti-patterns](#section-5-anti-patterns-when-agents-fail-you).
+Parallel **writers** on one file; implement before plan approval; skipping verify after General. Full list: [Anti-Patterns](#anti-patterns).
 
 ---
 
@@ -166,7 +115,7 @@ Parallel **writers** on one file; implement before plan approval; skipping verif
 
 ---
 
-## Section 0a: Agent model — primary, subagent, agentic workflow
+## Agent Model
 
 **Tool:** [OpenCode](https://opencode.ai) — terminal-based AI coding assistant (TUI)
 
@@ -292,12 +241,12 @@ These are **built-in defaults**. Override in project `opencode.json` or `.openco
 
 ### Why use subagents
 
-| Benefit | Explanation |
-|--------|-------------|
-| **Focus** | Narrow tools and instructions reduce noise (Explore is read-only) |
-| **Parallelism** | Run exploration + tests + diagnosis at the same time |
-| **Context control** | Long searches stay in the subagent; you get a digest back |
-| **Safety** | Plan + Explore limits unintended edits |
+For the general rationale (focus, parallelism, context control, safety), see
+[11-agents-subagents.md](../11-agents-subagents.md).
+
+In OpenCode specifically: Explore is read-only, Scout reaches external sources, General
+can edit. Combining them in one orchestration message lets you run exploration + tests +
+diagnosis concurrently while keeping the primary context lean.
 
 ---
 
@@ -343,9 +292,9 @@ Subagents do **not** see your full chat unless the primary passes context in the
 | 7 | **General** | Minimal fix `PersonServiceImpl.java` |
 | 8 | **Verify** (bash) | `mvn test` all green |
 
-Detailed prompts: [Section 1](#section-1-parallel-triage-red-build).
+Detailed prompts: [Parallel Triage](#parallel-triage-red-build).
 
-**Internals:** [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals)
+**Internals:** [Workflow Execution](#workflow-execution)
 
 ---
 
@@ -356,7 +305,7 @@ Detailed prompts: [Section 1](#section-1-parallel-triage-red-build).
 | **Tab** | Switch Plan ↔ Build |
 | **@mention** | Direct subagent turn |
 | **`task` tool** | Primary spawns child session — OpenCode built-in that creates an isolated subagent run and injects its final text summary back into the parent context (you orchestrate via message) |
-| **Custom `/command`** | Repeatable workflows — [Section 0c](#section-0c-commands-skills-and-agentsmd-opencode) |
+| **Custom `/command`** | Repeatable workflows — [Commands, Skills, and AGENTS.md](#commands-skills-and-agentsmd) |
 | **Skills** | `java-junit`, `java-code-review`, etc. |
 | **AGENTS.md** | Project rules; run `/init` once |
 
@@ -399,9 +348,9 @@ A custom agent with `mode: subagent` cannot issue `task` calls — it cannot del
 
 ---
 
-## Section 0b: How agentic workflow executes (OpenCode internals)
+## Workflow Execution
 
-**See also:** [Section 0a](#section-0a-agent-model-primary-subagent-agentic-workflow)
+**See also:** [Agent Model](#agent-model)
 
 ---
 
@@ -461,14 +410,14 @@ The primary iterates until it has enough to answer or delegate:
 | `task` | Spawn Explore / General / Scout in a **child session** |
 | `skill` | Load `java-junit`, `java-code-review`, etc. |
 
-Each iteration **re-sends accumulated context** — see [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention) for cost control.
+Each iteration **re-sends accumulated context** — see [Token Efficiency](#token-efficiency-and-doom-loop-prevention) for cost control.
 
 #### Phase 3 — Subagent via `task` tool
 
 When the primary delegates:
 
 1. OpenCode creates a **child session** with a fresh context.
-2. The child receives **only** what the parent puts in the task prompt — not your full chat.
+2. The child receives the system prompt (with tool descriptions) + AGENTS.md + what the parent puts in the task prompt — not your full chat history.
 3. The child runs its own loop (read → analyze → bash → …).
 4. When the child finishes, its **final text summary** is the task return value.
 5. The parent reads that summary and continues — or replies to you.
@@ -481,72 +430,15 @@ When the primary delegates:
 
 ### Context window and agentic loops
 
-Every LLM call has a **context window** — the maximum tokens the model accepts as input. In an agentic loop, **each step re-sends the full accumulated conversation** plus all prior tool outputs. This is why long sessions get expensive and why subagent isolation matters.
+For session lifecycle, context growth mechanics, practical token cost reference, subagent
+isolation diagram, model window sizes, and session-splitting triggers, see
+[12-agent-sessions.md](../12-agent-sessions.md).
 
-#### What goes into the primary context window
+**OpenCode summary:** Each step re-sends the full accumulated context. At 20 steps with
+large tool outputs, a typical Java triage session consumes 30 000–80 000 tokens. This is
+why phase resets and subagent delegation matter.
 
-Every LLM call in the primary session sends ALL of the following as input tokens:
-
-- Every prior message (yours + agent's) from session start
-- Every tool-call request and its result (file reads, bash output, grep hits)
-- The system prompt and `AGENTS.md` content
-- Any skill content loaded mid-session
-
-#### How fast it fills
-
-```text
-Step 1:  [system][msg1]                                    → small
-Step 2:  [system][msg1][tool1-req][tool1-out][reply1]      → grows
-Step 5:  [system][msg1..][tool1..5-req+out][reply1..4]     → large
-Step 15: same pattern × 3 → approaching compaction threshold
-```
-
-Growth is **quadratic** because tool outputs (especially `mvn test` logs, file reads) are large and are **re-sent at every subsequent step**. Tokens at step N ≈ sum of all tokens from steps 1 through N-1 plus the new tool output.
-
-#### Subagent isolation as context management
-
-```text
-Primary context                    Explore child context
-┌──────────────────────────┐       ┌───────────────────────┐
-│ Your messages            │       │ Task prompt only       │
-│ Primary tool outputs     │       │ Its own reads/searches │
-│ Explore SUMMARY (3 lines)│ ←─── │ 40-file search results │
-│ General SUMMARY (5 lines)│       └───────────────────────┘
-└──────────────────────────┘
-```
-
-Explore can read 40 files. Only its **3-line summary** enters the primary context. This is why delegating to subagents keeps the primary context lean.
-
-#### Practical context budget (reference)
-
-| Content | Approximate tokens |
-|---------|-------------------|
-| System prompt + AGENTS.md | 500–2 000 |
-| One `mvn test` output (8 tests, 1 failure) | 1 000–2 000 |
-| One Java source file (150 lines) | 500–800 |
-| One `grep` result (20 hits) | 300–600 |
-| Subagent summary (bullet list) | 100–300 |
-| Full PersonServiceImpl.java refactor diff | 400–1 000 |
-
-#### Model context window sizes
-
-| Model | Window | Safe working budget (80%) |
-|-------|--------|---------------------------|
-| Claude Sonnet 4 | 200 000 tokens | 160 000 |
-| Claude Haiku 4 | 200 000 tokens | 160 000 |
-| GPT-4o | 128 000 tokens | 100 000 |
-| GPT-4o mini | 128 000 tokens | 100 000 |
-
-At 20 steps with large tool outputs (file reads + test logs), a typical Java triage session can consume **30 000–80 000 tokens** in the primary context. This is why phase resets and subagent delegation matter.
-
-#### When to split the session
-
-- After step 10–12 in a single primary session
-- After any phase gate (triage approved → new Build session)
-- When you see compaction summaries appearing
-- Before implementation when the triage chat is already long
-
-Cost control details: [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention).
+Cost control and guardrails: [Token Efficiency](#token-efficiency-and-doom-loop-prevention).
 
 #### Phase 4 — Reply to you
 
@@ -564,8 +456,8 @@ You judge quality using the [review checklist](#review-checklist) in §0 of this
 
 | Pattern | Who initiates | Child session? | Context in child | Return value |
 |---------|---------------|----------------|------------------|--------------|
-| `@mention` in your message | You directly | Yes | Only what you write after @mention | Summary injected into primary |
-| Primary delegates via `task` | Primary agent | Yes | What primary puts in task prompt | Summary injected into primary |
+| `@mention` in your message | You directly | Yes | System prompt + AGENTS.md + what you write after @mention | Summary injected into primary |
+| Primary delegates via `task` | Primary agent | Yes | System prompt + AGENTS.md + what primary puts in task prompt | Summary injected into primary |
 | Primary uses bash/read directly | Primary agent | No (inline) | Full primary context | Inline in primary loop |
 
 
@@ -591,8 +483,8 @@ Both create an isolated child session, but they differ in what seeds the child's
 
 | Mechanism | Who initiates | Context the child receives |
 |-----------|---------------|---------------------------|
-| `@mention` in **your** message | You | Only the text you wrote after `@mention` |
-| Primary delegates via `task` | Primary agent | What the primary puts in the delegation prompt — may include excerpts from the conversation it considers relevant |
+| `@mention` in **your** message | You | System prompt + AGENTS.md + text you wrote after `@mention` |
+| Primary delegates via `task` | Primary agent | System prompt + AGENTS.md + what the primary puts in the delegation prompt — may include excerpts from the conversation it considers relevant |
 
 Both return a text summary that is injected into the primary context. From the child's perspective, the session is identical — it cannot tell whether it was spawned by the user or the primary.
 
@@ -677,57 +569,14 @@ Use this to inspect what Explore actually read, or what General proposed, withou
 
 ### Context and results exchange
 
-#### What subagents do NOT see
+For what subagents don't see, what flows back (Parent→Child / Child→Parent / Parent→You),
+and the `WORKFLOW_STATE.md` cross-session handoff pattern, see
+[12-agent-sessions.md](../12-agent-sessions.md) and
+[11-agents-subagents.md — Pass Context Explicitly](../11-agents-subagents.md).
 
-- Your full chat history (unless the primary pastes excerpts into the task prompt)
-- Other subagents' raw tool outputs (only what the primary merges)
-- Implicit team conventions (must be in `AGENTS.md` or the prompt)
-
-#### What flows back
-
-| Direction | Content |
-|-----------|---------|
-| Parent → Child | Task prompt: goal, paths, constraints, return format |
-| Child → Parent | Final text summary (findings, commands run, files changed) |
-| Parent → You | Synthesized report + recommendations |
-
-#### Shared file handoff: `WORKFLOW_STATE.md`
-
-**Important:** `WORKFLOW_STATE.md` is a **human convention** — you create the file manually (or ask Build to create it) and paste its path into the task prompt. OpenCode does **not** load it automatically.
-
-For multi-phase workflows (plan → debate → implement → verify), use a **single handoff file** instead of long chat history:
-
-```markdown
-## Scope
-- Section: com.example.demo.service.impl.PersonServiceImpl
-- Acceptance: PersonServiceImplTest green, public API unchanged
-
-## Plan (approved)
-- Extract sumLineTotals, applyDiscount
-
-## Implement status
-- [ ] Done — General session 2
-
-## Verify
-- mvn test: (pending)
-```
-
-**Pattern:**
-
-1. Planner writes scope + plan section only.
-2. Implementor reads file, edits code, updates implement status.
-3. Verifier runs `mvn test`, pastes summary into verify section.
-
-Debug by reading the file — not by reconstructing chat.
-
-**When to use `WORKFLOW_STATE.md` vs inline plan paste:**
-
-| Situation | Approach |
-|-----------|----------|
-| Single Plan → Build transition, plan fits in 20 lines | Paste the approved plan directly into the Build message |
-| Session is past step 10 (context large) | Use `WORKFLOW_STATE.md` as the handoff |
-| Multiple phases or multiple agent sessions need the same acceptance criteria | Use `WORKFLOW_STATE.md` |
-| Team handoff or resuming the next day | Use `WORKFLOW_STATE.md` |
+**OpenCode note:** `WORKFLOW_STATE.md` is a human convention — you create the file
+(or ask Build to create it) and paste its path into the task prompt.
+OpenCode does **not** load it automatically.
 
 Reference: [Multi-agent workflow article](https://codecraftersden.com/opencode-multi-agent-workflow/).
 
@@ -776,7 +625,7 @@ If replies suddenly "forget" early details, compaction may have run. Re-inject c
 | **Custom command** | Repeatable workflow | `/triage` → expands to full prompt |
 | **Skill** | Domain workflow | "Use java-code-review skill on PaymentService" |
 
-Details: [Section 0c](#section-0c-commands-skills-and-agentsmd-opencode).
+Details: [Commands, Skills, and AGENTS.md](#commands-skills-and-agentsmd).
 
 ---
 
@@ -820,9 +669,9 @@ cd <project_root>/templates/sample-project && mvn test -Dtest=PersonServiceImplT
 
 ---
 
-## Section 0c: Commands, skills, and AGENTS.md (OpenCode)
+## Commands, Skills, and AGENTS.md
 
-**See also:** [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals)  
+**See also:** [Workflow Execution](#workflow-execution)  
 **Reference:** [tools/opencode-reference.md](tools/opencode-reference.md), [tools/opencode-ecosystem.md](tools/opencode-ecosystem.md)
 
 ---
@@ -1141,10 +990,10 @@ Example config: [tools/opencode-agents.example.json](tools/opencode-agents.examp
 
 ---
 
-## Section 0d: Token efficiency and doom-loop prevention
+## Token Efficiency and Doom-Loop Prevention
 
-**See also:** [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals)  
-**Related:** [Section 5](#section-5-anti-patterns-when-agents-fail-you)
+**See also:** [Workflow Execution](#workflow-execution)  
+**Related:** [Anti-Patterns](#anti-patterns)
 
 ---
 
@@ -1154,12 +1003,13 @@ A **context window** is the maximum number of tokens a single LLM call can accep
 
 | Context type | What it contains |
 |--------------|------------------|
-| **Primary context** | Your messages + every tool output ever produced in this session + AGENTS.md + loaded skills |
-| **Subagent context** | Only the task prompt + its own reads/searches — isolated from primary chat |
+| **Primary context** | All messages (yours + agent's) + tool-call requests and outputs + system prompt + AGENTS.md + loaded skills (compaction may summarize early content) |
+| **Subagent context** | System prompt (with tool descriptions) + AGENTS.md + task prompt + its own reads/searches — isolated from primary chat |
 
 **One-line rule:** Primary context grows with every tool call; subagent context stays bounded and only the final summary returns to primary.
 
-Full mechanics (filling rate, model window sizes, when to split sessions): [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals) — "Context window and agentic loops".
+Full mechanics (filling rate, token cost table, model window sizes, session-splitting triggers):
+[12-agent-sessions.md](../12-agent-sessions.md). OpenCode-specific guardrails below.
 
 ---
 
@@ -1306,7 +1156,7 @@ Do not carry 40 messages of failed attempts into the implement phase.
 
 #### WORKFLOW_STATE.md instead of chat history
 
-One page of structured state beats re-explaining the ticket in every message. See [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals).
+One page of structured state beats re-explaining the ticket in every message. See [Workflow Execution](#workflow-execution).
 
 ---
 
@@ -1421,14 +1271,15 @@ steps: treat as final attempt before escalation to me.
 
 - [Token usage optimization (TrueFoundry)](https://www.truefoundry.com/blog/opencode-token-usage-how-it-works-and-how-to-optimize-it)
 - [Context constraints in agent loops (Augment Code)](https://www.augmentcode.com/guides/ai-agent-loop-token-cost-context-constraints)
-- [Section 5](#section-5-anti-patterns-when-agents-fail-you)
+- [Anti-Patterns](#anti-patterns)
 
 
 ---
 
-## Section 0e: Orchestration principles
+## Orchestration Principles
 
-**See also:** [Section 0a](#section-0a-agent-model-primary-subagent-agentic-workflow), [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals), [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention); [tools/opencode-reference.md](tools/opencode-reference.md) (skim)
+**See also:** [Agent Model](#agent-model), [Workflow Execution](#workflow-execution), [Token Efficiency](#token-efficiency-and-doom-loop-prevention); [tools/opencode-reference.md](tools/opencode-reference.md) (skim)  
+**General concepts:** phase gates, verify gates — [11-agents-subagents.md](../11-agents-subagents.md)
 
 ---
 
@@ -1442,7 +1293,7 @@ steps: treat as final attempt before escalation to me.
 
 Subagents **do not** see your full chat. Every worker prompt must repeat paths, constraints, and return format.
 
-OpenCode delegation: **@mention**, primary orchestration messages, custom `/commands`, and `task` tool child sessions — see [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals).
+OpenCode delegation: **@mention**, primary orchestration messages, custom `/commands`, and `task` tool child sessions — see [Workflow Execution](#workflow-execution).
 
 ---
 
@@ -1480,7 +1331,7 @@ flowchart TB
 | Diagnosis proposes "rewrite module" | Reject; demand minimal fix |
 | Tests not shown in summary | Block — request `mvn test` output |
 | Production incident | Hotfix playbook; tight scope |
-| Agent loops 3× on same failure | Interrupt — [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention) |
+| Agent loops 3× on same failure | Interrupt — [Token Efficiency](#token-efficiency-and-doom-loop-prevention) |
 
 ---
 
@@ -1537,9 +1388,9 @@ Templates: [templates/](templates/)
 
 ---
 
-## Section 1: Parallel triage (red build)
+## Parallel Triage (Red Build)
 
-**See also:** [Section 0a](#section-0a-agent-model-primary-subagent-agentic-workflow), [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals)
+**See also:** [Agent Model](#agent-model), [Workflow Execution](#workflow-execution)
 
 ### Demo project state
 
@@ -1552,8 +1403,8 @@ cd <project_root>/templates/sample-project && mvn test -Dtest=PersonServiceImplT
 
 | Class | Issue | Used in |
 |-------|-------|---------|
-| `PersonServiceImpl.findById` | Uses `.orElse(null)` instead of `.orElseThrow(...)` | Section 1, Section 3 |
-| `PersonServiceImpl` | Duplicated fetch/map/save pattern in `create` and `update` (refactor target, not a bug) | Section 2 |
+| `PersonServiceImpl.findById` | Uses `.orElse(null)` instead of `.orElseThrow(...)` | Parallel Triage, PR-Ready Workflow |
+| `PersonServiceImpl` | Duplicated fetch/map/save pattern in `create` and `update` (refactor target, not a bug) | Refactor Pipeline |
 
 **If state is wrong:**
 
@@ -1615,7 +1466,7 @@ flowchart LR
 
 Steps A–B–C can run **in parallel**. After approval → **Tab** to **Build** for the fix.
 
-If the CI log contains **multiple unrelated failures**, triage one root cause per session — see [Section 3](#section-3-pr-ready-workflow-ci-log-verify) — "When the log has multiple failures".
+If the CI log contains **multiple unrelated failures**, triage one root cause per session — see [PR-Ready Workflow](#pr-ready-workflow) — "When the log has multiple failures".
 
 ---
 
@@ -1625,13 +1476,13 @@ You send **one orchestration message** — not three separate messages. The Plan
 
 | Worker | How it runs | Context |
 |--------|-------------|---------|
-| `@explore` | `task` → child session | Isolated — only your explore instructions |
+| `@explore` | `task` → child session | Isolated from primary chat — gets system prompt + AGENTS.md + explore instructions |
 | `mvn test` | `bash` inline | Primary context — **not** a spawned child session |
-| Diagnose (log + code) | `task` → General child session | Isolated — only diagnose instructions |
+| Diagnose (log + code) | `task` → General child session | Isolated from primary chat — gets system prompt + AGENTS.md + diagnose instructions |
 
 **Verify is inline, not a subagent:** Step B (`mvn test`) runs as a `bash` call in the **primary context**. The flowchart shows it as a parallel step because it **starts at the same time** as the subagents, not because it is a fourth child session.
 
-The primary waits for all workers to complete (or fail), merges summaries, then replies once. Details: [Section 0b](#section-0b-how-agentic-workflow-executes-opencode-internals) — "Parallelism: concurrent or sequential?".
+The primary waits for all workers to complete (or fail), merges summaries, then replies once. Details: [Workflow Execution](#workflow-execution) — "Parallelism: concurrent or sequential?".
 
 ---
 
@@ -1738,9 +1589,9 @@ Copy [templates/triage-session.md](templates/triage-session.md) to `.opencode/co
 
 ---
 
-## Section 2: Refactor pipeline (sequential agents)
+## Refactor Pipeline
 
-**See also:** Section 1; `mvn test -Dtest=PersonServiceImplTest` green (or fix PersonServiceImpl first)
+**See also:** Parallel Triage; `mvn test -Dtest=PersonServiceImplTest` green (or fix PersonServiceImpl first)
 
 ---
 
@@ -1890,7 +1741,7 @@ See also: [safe-refactor playbook](playbooks/safe-refactor.md).
 
 ---
 
-## Section 3: PR-ready workflow (CI log + verify)
+## PR-Ready Workflow
 
 **See also:** [ci-logs fixture](../templates/sample-project/ci-logs/unit-tests-failure.log)
 
@@ -1996,12 +1847,12 @@ gh run view <run-id> --log-failed                 # download failed job log
 
 ### Custom command shortcut
 
-[templates/hotfix.md](templates/hotfix.md) or `/hotfix <log-path>` — see [Section 0c](#section-0c-commands-skills-and-agentsmd-opencode).
+[templates/hotfix.md](templates/hotfix.md) or `/hotfix <log-path>` — see [Commands, Skills, and AGENTS.md](#commands-skills-and-agentsmd).
 
 
 ---
 
-## Section 4: Full orchestration — one session
+## Full Orchestration
 
 **See also:** Sections 1–3
 
@@ -2133,11 +1984,17 @@ Install `/triage` first; full orchestration reuses patterns from [templates/](te
 
 ---
 
-## Section 5: Anti-patterns (when agents fail you)
+## Anti-Patterns
 
 **Goal:** Recognize bad delegation early and **take the keyboard back**.
 
-Reference: [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention)
+For the general failure patterns (parallel writers, doom loop, scope creep, verify skip,
+stop conditions, and recovery prompts), see
+[11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md).
+
+This section covers **OpenCode-specific** anti-patterns and recovery actions.
+
+Reference: [Token Efficiency](#token-efficiency-and-doom-loop-prevention)
 
 ---
 
@@ -2146,95 +2003,19 @@ Reference: [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention)
 | Symptom | Your action |
 |---------|-------------|
 | "Tests should pass" with no log | Reject; rerun `mvn test` on Build primary |
-| 12 files changed for one bug | Revert; single-file constraint |
-| Two agents edited same file | Never parallelize implementers |
+| 12 files changed for one bug | Revert; single-file + `-Dtest=` constraint |
+| Two agents edited same file | `/undo` or `git checkout -- <file>`; run sequentially |
 | Refactor + feature in one General task | Split explore / plan / implement |
-| Diagnosis rewrites module | Hotfix playbook |
-| Explore edited files | Plan primary + read-only Explore |
+| Explore edited files | Plan primary + `@explore read-only`; check permissions |
 | Plan primary implemented code | Plan-only prompt; Tab to Build only after approval |
-| Custom subagent writes during Plan | Plan primary + `edit: deny` in config |
-| @mention General refactors while Plan runs parallel Explore | One orchestration message via primary |
-| Same `mvn test` fails 3× | Interrupt — [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention) |
-| Agent edits `pom.xml` silently | Reject; scope Explore audit |
+| Custom subagent writes during Plan | `edit: deny` for plan-phase agents in `opencode.json` |
+| @mention General while Plan runs parallel Explore | One orchestration message via primary |
+| Same `mvn test` fails 3× | Interrupt; set `doom_loop: deny` — [Token Efficiency](#token-efficiency-and-doom-loop-prevention) |
+| Agent edits `pom.xml` silently | Reject; `@explore read-only` scope audit on `git diff` |
 
 ---
 
-### Worked anti-patterns
-
-#### Verify skipped — "Tests should pass" with no log
-
-**Symptom:** Build summary says "tests should pass" or "I believe the fix works" but no `mvn test` output.
-
-**Mechanism:** The agent skipped the verify gate or ran tests but did not paste output. You cannot confirm green without the literal Surefire line.
-
-**Scenario:**
-
-```text
-You: Build primary — fix PersonServiceImpl.findById; run mvn test -Dtest=PersonServiceImplTest.
-Agent: Fixed the orElse call in PersonServiceImpl.java. Tests should pass now.
-```
-
-**Your action:** Reject. Require verbatim output:
-
-```text
-Run mvn test now. Paste the Tests run / Failures line. Do not claim success without output.
-```
-
----
-
-#### Parallel writers on the same file
-
-**Symptom:** Two General (or Build + General) agents edited the same `.java` file in one orchestration step.
-
-**Mechanism:** Parallel child sessions do not coordinate locks. Both read the same baseline; the second write overwrites the first — one edit is lost silently.
-
-**Scenario:**
-
-```text
-You: In parallel — @general fix PersonServiceImpl.findById and @general refactor PersonServiceImpl.
-Both agents touch imports or a shared util; or you accidentally assign two implementers to PersonServiceImpl.java.
-git diff shows one agent's changes missing; tests fail with merge-like conflicts.
-```
-
-**Your action:** Never parallelize implementers on the same file. Revert (`/undo` or `git checkout -- <file>`), then run implement steps **sequentially** with one worker per file.
-
----
-
-#### Doom loop — same `mvn test` fails 3×
-
-**Symptom:** Agent runs identical `mvn test` (or the same wrong edit) three or more times with the same failure output.
-
-**Mechanism:** No new information enters the loop; each step re-sends the same context and retries the same approach. Token cost grows quadratically — see [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention).
-
-**Scenario:**
-
-```text
-PersonServiceImplTest still red after edit to wrong method (agent fixes create instead of findById).
-Agent: Let me run mvn test again… (same failure)
-Agent: I'll try once more… (same failure)
-```
-
-**Your action:** Interrupt (`Ctrl-C` if supported). Paste the stop message from [Section 0d](#section-0d-token-efficiency-and-doom-loop-prevention), tighten scope to one file + one test, or fix locally and start a fresh Build session.
-
----
-
-#### Scope creep — agent edits `pom.xml` silently
-
-**Symptom:** Summary mentions only `PersonServiceImpl.java` but `git diff` includes `pom.xml`, dependency bumps, or unrelated modules.
-
-**Mechanism:** Vague "fix the build" prompt lets General broaden scope. Plan phase was skipped or verify was not paired with a scope audit.
-
-**Scenario:**
-
-```text
-You: Fix the failing unit test.
-Agent: Updated JUnit version in pom.xml and fixed PersonServiceImpl.java.
-You expected one-line logic fix; got dependency churn and review surface area you did not approve.
-```
-
-**Your action:** Reject. Revert `pom.xml`. Re-run with explicit constraint: `edit PersonServiceImpl.java only; do not change pom.xml`. Optional: `@explore read-only` scope audit on `git diff` before merge.
-
----
+### OpenCode-specific anti-patterns
 
 #### Plan primary implemented code (skipped gate)
 
@@ -2256,23 +2037,23 @@ You never Tabbed to Build or approved the diff.
 
 ### Other patterns (brief)
 
-| Symptom | Mechanism | Your action |
-|---------|-----------|-------------|
-| 12 files changed for one bug | Vague "fix the project" prompt | Revert; single-file + `-Dtest=` constraint |
-| Refactor + feature in one General task | Task too broad for one worker | Split: Explore → plan gate → implement |
-| Explore edited files | Explore treated as implementer | Plan primary + `@explore read-only`; check permissions |
-| Custom subagent writes during Plan | `edit: allow` on planner subagent | `edit: deny` for plan-phase agents |
-| Conflicting @mentions | You invoked General while Plan orchestrates Explore | One orchestration message via primary only |
+For general failure patterns, see [11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md).
+OpenCode-specific recovery actions:
+
+| Symptom | OpenCode action |
+|---------|----------------|
+| Explore edited files | Plan primary + `@explore read-only`; set `edit: deny` on Explore agent in `opencode.json` |
+| Custom subagent writes during Plan | `edit: deny` for plan-phase agents in `opencode.json` |
+| Conflicting @mentions | One orchestration message via primary; do not @mention while primary already orchestrates |
+| Agent loops on same test | Set `doom_loop: ask` in `opencode.json`; interrupt with Ctrl-C |
 
 ---
 
 ### Stop conditions (take control)
 
-1. Public API change not approved  
-2. Security-sensitive paths touched  
-3. Test "fixed" by deleting assertion  
-4. `pom.xml` changed without ask  
-5. Agent loops after 2 failed verifies — debug locally  
+For general stop conditions, see [11-agents-subagents.md — Stop conditions](../11-agents-subagents.md).
+
+OpenCode-specific: use `/undo` to revert agent edits; set `edit: deny` in `opencode.json` to enforce read-only mode.
 
 #### Detecting a public API change
 
@@ -2296,12 +2077,17 @@ Also review the agent summary for "renamed", "changed return type", or "removed 
 
 ### Recovery playbook
 
+See [11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md) for the
+general recovery prompt template (stop / summarize / redirect).
+
+**OpenCode-specific recovery:**
+
 ```text
 Build primary — run mvn test; paste last 40 lines of output.
 Then @general with failure excerpt + ci log path; minimal diff; one file only.
 ```
 
-Interrupt if looping:
+Interrupt if looping (`Ctrl-C` in the TUI, then):
 
 ```text
 Stop. Summarize what you tried, what failed, and what you need from me.
@@ -2323,7 +2109,7 @@ Do not run more commands until I reply.
 
 [Playbooks](playbooks/) + [templates](templates/) — replace demo path with your service.
 
-Reference: [Section 0a](#section-0a-agent-model-primary-subagent-agentic-workflow), [Java developer quick start](#0-for-java-developers-orchestration).
+Reference: [Agent Model](#agent-model), [Java developer quick start](#0-for-java-developers-orchestration).
 
 ---
 
@@ -2454,7 +2240,7 @@ Build primary — apply approved PersonServiceImpl fix only. Run mvn test -Dtest
 
 **Root cause:** `PersonServiceImpl.findById` uses `.orElse(null)` instead of `.orElseThrow(...)` when the person is not found.
 
-Section reference: [Section 1](#section-1-parallel-triage-red-build)
+Section reference: [Parallel Triage](#parallel-triage-red-build)
 
 ---
 
@@ -2483,7 +2269,7 @@ Run mvn test -Dtest=PersonServiceImplTest then mvn test -Dtest=PersonServiceImpl
 Return: before/after summary and test output.
 ```
 
-Section reference: [Section 2: Refactor pipeline](#section-2-refactor-pipeline-sequential-agents)
+Section reference: [Refactor Pipeline](#refactor-pipeline)
 
 ---
 
@@ -2540,6 +2326,8 @@ sequenceDiagram
 ```
 
 **Rule:** Parallel tasks must be **independent**. Don't spawn two agents that edit the same file at once.
+
+Section reference: [Parallel Triage](#parallel-triage-red-build)
 
 ---
 
@@ -2601,14 +2389,7 @@ Expands to full parallel triage prompt on **Plan** primary — one keystroke for
 
 ### Choosing the agent
 
-| If you need… | Use |
-|--------------|-----|
-| Find code / map module | `@explore` |
-| Run commands, git, Maven | Build primary bash |
-| One failing job / test class | Plan + log + `@general` |
-| Implement or refactor with edits | Build + `@general` |
-| Repeatable workflow | Custom `/command` |
-| JUnit / Spring conventions | `java-junit` / `spring-boot-testing` skill |
+See [Commands + skills + agents together](#commands--skills--agents-together) in [Commands, Skills, and AGENTS.md](#commands-skills-and-agentsmd) for a task-oriented lookup table.
 
 ### Token efficiency
 
@@ -2617,25 +2398,18 @@ Expands to full parallel triage prompt on **Plan** primary — one keystroke for
 - Phase resets: plan session → implement session with pasted plan
 - Focused tests before full suite: `mvn test -Dtest=CalculatorTest`
 
-Full guide: [Section 0d: Token efficiency](#section-0d-token-efficiency-and-doom-loop-prevention).
+Full guide: [Token Efficiency](#token-efficiency-and-doom-loop-prevention).
 
 ### Anti-patterns
 
 - Spawning a subagent to **read one known file** — use Read directly.
 - **Vague prompts** ("make it better") — subagent lacks your implicit context.
-- **Parallel writers** on the same files — race conditions and lost work.
-- **Ignoring failing tests** in the playground — `Calculator` is meant for diagnose workflows in Section 1.
+
+Full list with worked examples and recovery steps: [Anti-Patterns](#anti-patterns).
 
 ### Topic index
 
-| Section | Topic |
-|---------|-------|
-| [0b](#section-0b-how-agentic-workflow-executes-opencode-internals) | Execution internals |
-| [0c](#section-0c-commands-skills-and-agentsmd-opencode) | `/commands`, skills |
-| [1](#section-1-parallel-triage-red-build) | Parallel triage |
-| [2](#section-2-refactor-pipeline-sequential-agents) | Refactor pipeline |
-| [3](#section-3-pr-ready-workflow-ci-log-verify) | PR-ready workflow |
-| [4](#section-4-full-orchestration-one-session) | Full orchestration |
+Section index: see [Workflow sections](#workflow-sections) at the top.
 
 ---
 
@@ -2667,10 +2441,4 @@ Full guide: [Section 0d: Token efficiency](#section-0d-token-efficiency-and-doom
 
 ---
 
-## Related files
-
-- [templates/](templates/) — triage, refactor, PR, hotfix templates
-- [playbooks/](playbooks/) — red build, safe refactor, pre-PR, hotfix
-- [tools/opencode-reference.md](tools/opencode-reference.md) — cheat sheet
-- [tools/opencode-ecosystem.md](tools/opencode-ecosystem.md) — community skills & MCP
-- [sample-project/README.md](../templates/sample-project/README.md) — project overview and setup
+See [Resources](#resources) at the top for templates, playbooks, and tools.

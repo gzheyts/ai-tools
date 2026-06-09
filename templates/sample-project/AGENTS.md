@@ -121,6 +121,7 @@ public class PersonServiceImpl implements PersonService { }
 - `.cursorignore` excludes secrets, prod configs, and MCP credentials
 - MCP Postgres server configured with a read-only database user
 - See `context-map.md` for which files to open per task type
+- Full AGENTS template: [templates/AGENTS.md](../../AGENTS.md)
 - Skills: code-review, generate-tests, db-migration, schema-review, ci-fix
 
 ---

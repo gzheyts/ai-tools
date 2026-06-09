@@ -1,4 +1,4 @@
-# Section 13: Java Production Stack — Spring Boot, Database & DevOps
+# Section 14: Java Production Stack — Spring Boot, Database & DevOps
 
 Teach AI assistants your **Java 21 / Spring Boot 3.5** patterns, **PostgreSQL /
 Oracle / Liquibase** conventions, and **GitLab CI / Kubernetes** infrastructure —
@@ -611,9 +611,7 @@ Generate tests for PersonServiceImpl. Follow these rules:
 - Use ObjectMother.personEntity() for test data
 ```
 
-## Quick-Reference Cheat Sheet
-
-### SequencedCollection (Java 21 — GA, no flags needed)
+## Quick-Reference Cheat Sheet: Java 21
 
 `java.util.SequencedCollection` is a new interface (JEP 431) that all
 ordered collections (`List`, `LinkedHashSet`, `Deque`, etc.) implement.
@@ -1103,11 +1101,7 @@ Output:
 3. Summary statistics (tables checked, issues by severity)
 ```
 
-## Quick-Reference Cheat Sheet
-
-| Task | Prompt Template | Common Pitfall |
-|------|----------------|----------------|
-| Create table | "Create a table for {entity} with columns: {list}. Follow project naming conventions." | AI may forget timestamps (created_at, updated_at) or use wrong PK type |
+## Quick-Reference Cheat Sheet: Database
 | Add column | "/migration — add {column} ({type}) to {table}" | AI may omit precondition or rollback |
 | Add index | "Create an index on {table}({columns}) for optimizing {query description}" | AI may not use `CONCURRENTLY` for production indexes |
 | Optimize query | "Analyze this EXPLAIN plan: {plan}. Table has {N} rows." | AI may suggest indexes without checking existing ones |
@@ -1672,11 +1666,7 @@ Once root cause is identified, ask the AI to generate the fix:
 > 2. A ConfigMap entry for JAVA_TOOL_OPTIONS
 > 3. The kubectl commands to apply the hotfix now"
 
-## Quick-Reference Cheat Sheet
-
-| DevOps Task | AI Prompt Template | Key Context to Include |
-|------------|-------------------|----------------------|
-| Generate pipeline | "Generate a GitLab CI pipeline for a Spring Boot 3.5 app with stages: {list}" | Java version, Maven settings, registry URL, target K8s namespaces |
+## Quick-Reference Cheat Sheet: DevOps
 | Debug CI failure | "This CI job failed in '{stage}'. Error: {error}. Job YAML: {yaml}" | Full error log, job definition, referenced template names |
 | Generate Helm chart | "Generate a Helm chart for {service} following our conventions" | `.helm/` structure, probe paths, resource defaults, environment table |
 | Debug K8s issue | "/k8s-debug — {symptom}. Logs: {logs}. Describe: {describe}" | Pod logs, describe output, recent events, resource metrics |
@@ -1690,9 +1680,8 @@ Once root cause is identified, ask the AI to generate the fix:
 
 ## Next Section
 
-Proceed to [Section 12: MCP Servers](12-mcp-servers.md) to learn how to
-extend your AI assistant with external tools and data sources via the
-Model Context Protocol.
+Proceed to [Section 15: Team Collaboration](15-team-collaboration.md) to learn
+how to share AI configurations and onboard developers as a team.
 
 ### Further Reading
 

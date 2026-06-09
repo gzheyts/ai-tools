@@ -1,13 +1,28 @@
 # Section 7: Prompt Optimization & Debugging
 
-Sections 2 and 3 taught you how to write prompts -- CO-STAR, the 26
-principles, zero-shot through chain-of-thought. Section 1 explained what
+Sections 3 and 4 taught you how to write prompts -- CO-STAR, the 26
+principles, zero-shot through chain-of-thought. Section 2 explained what
 happens under the hood: the agent loop, context window, context rot.
 
 This section fills the gap between writing and maintaining prompts. It
 covers what to do when a prompt **fails**, how to **measure** quality, how
 to **debug** root causes, and how to **refactor** prompts that have grown
 unwieldy. Everything applies to AGENTS.md, skills, and custom commands.
+
+| Section | Topic |
+|---------|-------|
+| [1. Prompt Engineering Lifecycle](#1-the-prompt-engineering-lifecycle) | Draft → test → observe → fix → validate |
+| [2. Taxonomy of Failures](#2-taxonomy-of-prompt-failures) | Vague outputs, ignored instructions, scope creep |
+| [3. Debugging Methodology](#3-debugging-methodology) | Isolate, ablate, contrast, trace |
+| [4. Optimization Workflow](#4-optimization-workflow) | Golden test set, baseline, validate |
+| [5. Quality Measurement](#5-quality-measurement----what-does-better-mean) | Scoring dimensions |
+| [6. Tools and Mechanics](#6-tools-and-mechanics) | In-IDE tools, external evaluators |
+| [7. Applying to Config Files](#7-applying-to-agentsmd-skills-and-commands) | AGENTS.md, skills, commands |
+| [8. Prompt Refactoring](#8-prompt-refactoring) | When and how to refactor |
+| [9. Best Practices Summary](#9-best-practices-summary) | Consolidated checklist |
+| [10. Systematic Debugging Checklist](#10-systematic-prompt-debugging-checklist) | Step-by-step debug guide |
+| [11. Golden Test Set](#11-golden-test-set-best-practices) | Building and maintaining |
+| [12. Failure → Fix Reference](#12-quick-reference-failure-type--debug-strategy--fix) | Quick-reference table |
 
 ---
 
@@ -934,12 +949,13 @@ public List<Person> search(@RequestParam String query) {
 
 ## Next Section
 
-Proceed to [Section 3: Prompting — Management](03-prompting.md#multi-project-prompt-management)
-to learn how to store, share, and version prompts across multiple projects
-using Git, GNU Stow, chezmoi, and Linux shell tools.
+Proceed to [Section 8: AGENTS.md](08-agents-md.md) to write your first
+project context file that shapes every AI interaction.
 
 Or revisit earlier sections:
 
+- [Section 3: Prompting — Management](03-prompting.md#multi-project-prompt-management)
+  for storing and sharing prompts across projects
 - [Section 3: Prompting](03-prompting.md) for the CO-STAR framework and
   26 principles
 - [Section 4: Prompt Techniques](04-prompt-techniques.md) for zero-shot,

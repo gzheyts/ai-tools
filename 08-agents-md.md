@@ -5,6 +5,20 @@ provides every AI coding agent with essential project context. It is loaded
 on **every single interaction**, so its content directly shapes the quality
 of every response you receive.
 
+| Section | Topic |
+|---------|-------|
+| [Why AGENTS.md Matters](#why-agentsmd-matters) | Impact on every AI response |
+| [The Specification](#the-specification) | Placement, loading hierarchy |
+| [Structure of a Good AGENTS.md](#structure-of-a-good-agentsmd) | 6 required sections |
+| [Anti-Patterns to Avoid](#anti-patterns-to-avoid) | What to exclude from the file |
+| [Prompting Tips](#prompting-tips-for-agentsmd) | Writing effective entries |
+| [Real-World Example](#real-world-example) | Before/after annotated example |
+| [Maintenance Strategy](#agentsmd-maintenance-strategy) | Keeping it current |
+| [Hierarchical AGENTS.md](#hierarchical-agentsmd-when-and-how) | Directory-level files |
+| [Common Anti-Patterns](#common-agentsmd-anti-patterns) | Too long, too generic, contradictory |
+
+---
+
 ## Why AGENTS.md Matters
 
 Without it, an AI assistant will:
@@ -20,7 +34,7 @@ as a senior team member.
 ## The Specification
 
 `AGENTS.md` follows the Linux Foundation standard adopted across 60,000+
-repositories. It is recognized by Cursor, OpenCode, SourceCraft, Claude Code,
+repositories. It is recognized by Cursor, OpenCode, Claude Code,
 GitHub Copilot, and many others.
 
 ### Placement
@@ -48,135 +62,21 @@ Subdirectory files extend (not replace) the root file.
 
 ## Structure of a Good AGENTS.md
 
-A production-quality `AGENTS.md` has these sections:
+A production-quality `AGENTS.md` has these sections. Full copy-paste template:
+[templates/AGENTS.md](templates/AGENTS.md).
 
-### 1. Project Overview
-What this project is, what language and framework it uses.
+| Section | Purpose |
+|---------|---------|
+| **Project Overview** | Stack, package name, database, build tool — orients every response |
+| **Build, Test & Lint Commands** | Exact `./mvnw` commands so the AI never guesses |
+| **Code Style Guidelines** | Import order, naming, annotation order, DTO rules |
+| **Architecture** | Layer boundaries, hard rules (no entity in API, no repo in controller) |
+| **Testing** | JUnit 5 naming, BDD structure, ObjectMother pattern |
+| **Common Patterns** | Error handling, Optional usage, logging conventions |
+| **Database / CI / K8s** (optional) | Schema conventions, pipeline notes, deployment rules |
 
-```markdown
-## Project Overview
-
-**my-service** -- Spring Boot 3.5 application for user management.
-
-- **Language**: Java 21
-- **Framework**: Spring Boot 3 with Spring Data JDBC
-- **Database**: PostgreSQL (H2 for tests)
-- **Build Tool**: Maven 3.9+
-- **Package**: com.example.myservice
-```
-
-### 2. Build, Test & Lint Commands
-Exact commands so the AI never guesses.
-
-```markdown
-## Build, Test & Lint Commands
-
-### Build
-\```bash
-./mvnw clean package
-./mvnw clean package -DskipTests
-\```
-
-### Test
-\```bash
-# All tests
-./mvnw test
-
-# Single class
-./mvnw test -Dtest=PersonServiceTest
-
-# Single method
-./mvnw test -Dtest=PersonServiceTest#createPerson_validInput_returnsPerson
-
-# With coverage
-./mvnw test jacoco:report
-\```
-
-### Code Quality
-\```bash
-./mvnw versions:display-dependency-updates
-./mvnw dependency:analyze
-\```
-```
-
-### 3. Code Style Guidelines
-Import order, formatting rules, naming conventions.
-
-```markdown
-## Code Style Guidelines
-
-### Import Order
-1. jakarta.*
-2. lombok.*
-3. org.springframework.*
-4. com.example.* (project packages)
-5. java.* / java.util.*
-6. static imports (separated by blank line)
-
-Never use wildcard imports.
-
-### Naming
-- Classes: PascalCase (PersonService)
-- Implementations: {Interface}Impl (PersonServiceImpl)
-- Tests: {ClassUnderTest}Test (PersonServiceTest)
-- Methods: camelCase (createPerson)
-- Constants: UPPER_SNAKE_CASE (MAX_RETRY_COUNT)
-```
-
-### 4. Architecture Rules
-Layer boundaries and dependency rules.
-
-```markdown
-## Architecture
-
-### Layered Architecture
-1. **Controller** (@RestController): HTTP only, delegates to Service
-2. **Service** (@Service interface + Impl): Business logic, @Transactional
-3. **Repository** (@Repository): Data access via Spring Data JDBC
-4. **Entity**: Domain models, never exposed via API
-5. **Mapper**: Entity <-> DTO conversion via MapStruct
-
-### Hard Rules
-- Controllers inject Service interfaces only (NEVER Repositories directly)
-- Services delegate all SQL to Repositories (NEVER execute raw SQL)
-- All inter-layer data transfer uses DTOs (records)
-- Return DTO records from all REST endpoints (NEVER entities)
-```
-
-### 5. Testing Patterns
-How tests should be structured.
-
-```markdown
-## Testing
-
-- JUnit 5 with Spring Boot Test
-- Test naming: methodName_stateUnderTest_ExpectedBehavior
-- Use ObjectMother pattern for test data
-- Integration tests extend AbstractComponentTest
-- BDD structure: given / when / then / verify
-```
-
-### 6. Common Patterns
-Reusable code patterns so the AI produces consistent output.
-
-```markdown
-## Common Patterns
-
-### Error Handling
-- EntityNotFoundException for missing resources (404)
-- ConflictException for state conflicts (409)
-- ValidationException for business rule violations (422)
-- Log errors with context: log.error("msg: id={}", id, ex)
-
-### Optional Handling
-Person person = repository.findById(id)
-    .orElseThrow(() -> new EntityNotFoundException("Person not found", id));
-
-### DTOs
-- Always use Java records
-- Apply @Valid on @RequestBody in controllers
-- Use compact canonical constructors for validation
-```
+Keep the file dense. Move detailed recipes into [Skills](09-skills.md) instead
+of bloating AGENTS.md.
 
 ## Anti-Patterns to Avoid
 

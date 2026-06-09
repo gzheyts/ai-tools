@@ -9,10 +9,16 @@ This section teaches research-backed prompting techniques for AI-assisted
 Java/Spring Boot development, then covers **multi-project prompt management** —
 storage layers, sharing, versioning, and Linux tooling.
 
-| Part | Topic |
-|------|-------|
-| [Fundamentals](#why-prompting-matters-for-developers) | Anatomy, CO-STAR, 26 principles, anti-patterns |
-| [Management](#multi-project-prompt-management) | Global/team/project layers, Git, Stow, chezmoi |
+| Section | Topic |
+|---------|-------|
+| [Why Prompting Matters](#why-prompting-matters-for-developers) | Value, impact, the prompting gap |
+| [Anatomy of a Prompt](#anatomy-of-an-effective-prompt) | Role, Task, Context, Format |
+| [CO-STAR Framework](#the-co-star-framework) | Structured six-element prompt design |
+| [26 Principles](#the-26-principles-of-effective-prompting) | Research-backed prompting rules |
+| [Applying to Config Files](#applying-prompting-techniques-to-assistant-configuration) | AGENTS.md, SKILL.md, custom commands |
+| [Practical Examples](#practical-examples-each-principle-applied) | 14 principles applied to Java |
+| [Anti-Patterns](#prompting-anti-patterns-for-java-developers) | Common mistakes and fixes |
+| [Multi-Project Prompt Management](#multi-project-prompt-management) | Storage layers, Git, Stow, chezmoi, versioning |
 
 ---
 
@@ -1824,4 +1830,4 @@ with practical Java/Spring Boot examples.
 - Create a `prompt-library` repo and link global skills with GNU Stow or chezmoi
 - Once prompts fail or drift, see [Section 7: Prompt Optimization](07-prompt-optimization.md)
   for debugging, golden test sets, and promptfoo evaluations
-- For team-wide sharing, see [Section 14: Team Collaboration](14-team-collaboration.md)
+- For team-wide sharing, see [Section 15: Team Collaboration](15-team-collaboration.md)

@@ -39,15 +39,6 @@ sample-project/
 │       ├── ci-fix.md
 │       └── k8s-debug.md
 │
-├── .codeassistant/                  # SourceCraft configuration
-│   ├── mcp.json                     # MCP server config
-│   └── commands/                    # SourceCraft commands
-│       ├── review.md
-│       ├── test.md
-│       ├── migration.md
-│       ├── ci-fix.md
-│       └── k8s-debug.md
-│
 ├── src/main/java/com/example/demo/  # Java source
 │   ├── DemoServiceApplication.java
 │   ├── controller/PersonController.java

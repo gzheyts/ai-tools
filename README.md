@@ -22,7 +22,7 @@ My personal notes on using **AI coding assistants** as a Java developer.
 | CI/CD         | GitLab CI |
 | Orchestration | Kubernetes + Helm |
 | Databases     | PostgreSQL, Oracle |
-| Assistants    | Cursor (+ CLI), OpenCode, Yandex SourceCraft |
+| Assistants    | Cursor (+ CLI), OpenCode |
 
 ---
 
@@ -38,11 +38,12 @@ Ready-to-use files in [`templates/`](templates/):
 | `team-onboarding.md` | Team onboarding guide |
 | `command-cursor.md` | Cursor slash command template |
 | `command-opencode.md` | OpenCode command template |
-| `command-sourcecraft.md` | SourceCraft command template |
 | `mcp-config-cursor.json` | MCP config for Cursor |
 | `mcp-config-opencode.json` | MCP config for OpenCode |
 | `liquibase-changelog.xml` | Liquibase changelog template |
 | `sample-project/` | Reference Maven project with skills, commands, and AGENTS.md — demo target for [OpenCode workflows](opencode-agent-patterns/README.md) |
+
+`context-map.md` and `team-onboarding.md` are canonical templates; `sample-project/` holds project-specific overrides (paths, skill lists) where needed.
 
 ---
 
@@ -89,15 +90,16 @@ Complements [11-agents-subagents.md](11-agents-subagents.md) (assistant-agnostic
 | 09 | [09-skills.md](09-skills.md) | Skills |
 | 10 | [10-custom-commands.md](10-custom-commands.md) | Custom commands |
 | 11 | [11-agents-subagents.md](11-agents-subagents.md) | Agents & subagents — see also [opencode-agent-patterns/README.md](opencode-agent-patterns/README.md) |
-| 12 | [12-mcp-servers.md](12-mcp-servers.md) | MCP servers |
+| 12 | [12-agent-sessions.md](12-agent-sessions.md) | Agent sessions — lifecycle, child sessions, compaction, cross-session handoff |
+| 13 | [13-mcp-servers.md](13-mcp-servers.md) | MCP servers |
 
 ### Java & DevOps
 | # | File | Topic |
 |---|------|-------|
-| 13 | [13-java-production-stack.md](13-java-production-stack.md) | Java / Spring Boot, database & DevOps |
+| 14 | [14-java-production-stack.md](14-java-production-stack.md) | Java / Spring Boot, database & DevOps |
 
 ### Advanced
 | # | File | Topic |
 |---|------|-------|
-| 14 | [14-team-collaboration.md](14-team-collaboration.md) | Team collaboration |
-| 15 | [15-security-and-privacy.md](15-security-and-privacy.md) | Security & privacy |
+| 15 | [15-team-collaboration.md](15-team-collaboration.md) | Team collaboration |
+| 16 | [16-security-and-privacy.md](16-security-and-privacy.md) | Security & privacy |

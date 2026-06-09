@@ -11,11 +11,22 @@ Understanding these internals lets you:
 - Choose the right tool (MCP, RAG, direct file read) for each situation
 - Reason about context window limits instead of guessing
 
+| Section | Topic |
+|---------|-------|
+| [1. The Agent Loop](#1-the-agent-loop) | Perceive → reason → act cycle |
+| [2. Tools](#2-tools----how-the-llm-acts-on-the-world) | Built-in tools, execution sequence, parallel calls |
+| [3. MCP](#3-mcp----model-context-protocol) | Architecture, integration with the agent loop |
+| [4. RAG](#4-rag----retrieval-augmented-generation) | Embed → retrieve → inject pipeline |
+| [5. Context Engineering](#5-context-engineering) | Window anatomy, token budget, context rot |
+| [6. Prompt Engineering](#6-prompt-engineering----the-users-layer) | Where your prompt fits in the layered model |
+| [End-to-End Flow](#putting-it-all-together-end-to-end-request-flow) | Full request walkthrough |
+| [Common Misconceptions](#common-misconceptions) | What AI assistants do not do |
+
 ---
 
 ## 1. The Agent Loop
 
-Every AI coding assistant -- Cursor, OpenCode, SourceCraft, GitHub Copilot
+Every AI coding assistant -- Cursor, OpenCode, GitHub Copilot
 Chat -- runs the same fundamental loop at its core. This loop is what makes
 an assistant an **agent** rather than a simple chatbot.
 
@@ -229,7 +240,7 @@ use tools that are not registered. Here is what Cursor provides:
 | Task          | Launch a subagent (see [Section 11](11-agents-subagents.md)) | Spawns agent |
 | CallMcpTool   | Call an MCP server tool (see section 3)    | Varies       |
 
-OpenCode and SourceCraft have equivalent tools with different names but
+OpenCode has equivalent tools with different names but
 the same fundamental categories: **read**, **search**, **edit**, **execute**,
 and **delegate**.
 
@@ -334,288 +345,38 @@ loop iterations.
 
 ## 3. MCP -- Model Context Protocol
 
-MCP is an open standard (created by Anthropic, adopted across the
-industry) that lets you connect **external capabilities** to your AI
-assistant without modifying the assistant itself.
+MCP (Model Context Protocol) is an open standard for connecting **external
+capabilities** to your AI assistant without modifying the IDE itself.
 
 ### The Problem MCP Solves
 
-Built-in tools are fixed by the IDE vendor. If you need the assistant to:
-- Query your GitLab merge requests
-- Read symbols from a language server
-- Look up rows in a production database
-- Fetch a Jira ticket description
+Built-in tools are fixed by the vendor. MCP lets the assistant reach systems
+the IDE does not ship with, for example:
 
-...you cannot add those as built-in tools. MCP provides a **standard
-protocol** for plugging in external tool servers.
+- GitLab merge requests and blame history
+- Language-server symbol search (Serena, etc.)
+- Production or staging database schema inspection
+- Issue trackers and internal APIs
 
-### Architecture
+### Architecture (three roles)
 
-MCP defines three roles:
+| Component | What It Does |
+|-----------|--------------|
+| **Host** | The IDE (Cursor, OpenCode). Manages MCP clients. |
+| **Client** | One per server. Routes tool calls from the agent. |
+| **Server** | Separate process exposing tools/resources via JSON-RPC (stdio or SSE). |
 
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                        MCP Host                              │
-│                  (IDE: Cursor, OpenCode)                     │
-│                                                             │
-│  ┌───────────────────────────────────────────────────────┐   │
-│  │                     MCP Client                        │   │
-│  │              (AI Assistant / Agent)                   │   │
-│  │                                                       │   │
-│  │  Sees MCP tools in its tool list alongside            │   │
-│  │  built-in tools (Read, Grep, Shell, etc.)             │   │
-│  └──────┬────────────────┬──────────────┬────────────────┘   │
-│         │                │              │                    │
-│         ▼                ▼              ▼                    │
-│  ┌────────────┐  ┌────────────┐  ┌───────────────┐          │
-│  │ MCP Server │  │ MCP Server │  │ MCP Server    │          │
-│  │ (GitLens)  │  │ (Serena)   │  │ (Database)    │          │
-│  │            │  │            │  │               │          │
-│  │ Tools:     │  │ Tools:     │  │ Tools:        │          │
-│  │ - git_log  │  │ - find_sym │  │ - run_query   │          │
-│  │ - blame    │  │ - get_refs │  │ - list_tables │          │
-│  │ - diff     │  │ - search   │  │ - describe    │          │
-│  └────────────┘  └────────────┘  └───────────────┘          │
-└─────────────────────────────────────────────────────────────┘
-```
+MCP tools appear in the model's tool list **exactly like built-in tools**
+(Read, Grep, Shell, etc.). The agent loop does not distinguish them — the
+model picks the best-matching tool description on each iteration.
 
-- **MCP Host**: The IDE application that runs the assistant.
-- **MCP Client**: The agent inside the IDE that communicates with MCP servers.
-- **MCP Server**: A separate process (local or remote) that exposes tools,
-  resources, and prompts via the MCP protocol (JSON-RPC over stdio or SSE).
+You can steer preferences in `AGENTS.md` (e.g. "prefer Serena
+`find_referencing_symbols` over Grep for symbol references"). See
+[Section 8: AGENTS.md](08-agents-md.md).
 
-### How MCP Integrates with the Agent Loop
+**Deep dive:** configuration, useful servers for Java, custom servers,
+security, and troubleshooting — [Section 13: MCP Servers](13-mcp-servers.md).
 
-MCP tools appear in the model's tool list **exactly like built-in tools**.
-The model does not know or care whether a tool is built-in or comes from
-an MCP server. It simply picks the best tool for the job.
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant Agent as Agent Runtime
-    participant LLM
-    participant BuiltIn as Built-in Tools
-    participant MCP as MCP Server (Serena)
-
-    User->>Agent: "Find all classes that reference PersonService"
-    Agent->>LLM: Context + tool list (built-in + MCP tools)
-    
-    Note over LLM: Model sees both Grep (built-in)<br/>and find_referencing_symbols (MCP).<br/>Picks the MCP tool for precision.
-
-    LLM-->>Agent: Tool call: CallMcpTool("serena", "find_referencing_symbols", {name: "PersonService"})
-    Agent->>MCP: JSON-RPC: find_referencing_symbols({name: "PersonService"})
-    MCP-->>Agent: 4 references with code snippets and file locations
-    Agent->>LLM: Inject MCP result into context
-    LLM-->>Agent: Text: "PersonService is referenced by PersonController, PersonControllerTest, ..."
-    Agent-->>User: Display response
-```
-
-### When Does MCP Get Called vs Built-In Tools?
-
-The model chooses based on the tool description in the schema. The decision
-is not hardcoded -- it emerges from the LLM's training and the tool
-descriptions you provide.
-
-| Scenario                                      | Likely Tool Choice         | Why                                     |
-|-----------------------------------------------|----------------------------|-----------------------------------------|
-| Read a known file path                        | Built-in Read              | Direct, no overhead                     |
-| Search for a text pattern                     | Built-in Grep              | Fast regex search                       |
-| Find all references to a symbol               | MCP (Serena)               | Semantic understanding, not just text   |
-| Get git blame for a file                      | MCP (GitLens)              | Git-specific operation                  |
-| Run a database query                          | MCP (Database)             | External system access                  |
-| List files matching a pattern                 | Built-in Glob              | Filesystem operation                    |
-| Find code by meaning ("where is auth done?")  | Built-in SemanticSearch    | Vector index is built-in                |
-
-### MCP Resources vs Tools
-
-MCP servers can also expose **resources** -- read-only data that the
-assistant can fetch without executing a function. Resources have URIs
-and are useful for static context like documentation, configuration
-schemas, or API specifications.
-
-| MCP Capability | Purpose                          | Example                                |
-|----------------|----------------------------------|----------------------------------------|
-| Tools          | Actions the model can invoke     | `find_symbol`, `run_query`, `git_log`  |
-| Resources      | Read-only data for context       | Project README, API schema, DB schema  |
-| Prompts        | Reusable prompt templates        | Code review template, migration guide  |
-
-### Configuring MCP in Your Project
-
-MCP servers are registered in your IDE settings. In Cursor, this is
-typically in `.cursor/mcp.json` or the global settings:
-
-```json
-{
-  "mcpServers": {
-    "serena": {
-      "command": "uvx",
-      "args": ["serena-mcp", "--project-root", "."],
-      "description": "Semantic code analysis"
-    },
-    "database": {
-      "command": "npx",
-      "args": ["-y", "@modelcontextprotocol/server-postgres", "postgresql://localhost:5432/mydb"],
-      "description": "PostgreSQL database access"
-    }
-  }
-}
-```
-
-Once registered, the MCP server's tools appear in the model's tool list
-automatically. No prompt changes are needed.
-
-### Tool Resolution with Multiple MCP Servers
-
-When you connect several MCP servers, the model's tool list can grow to
-dozens or even hundreds of tools. A typical setup might look like this:
-
-```text
-Tool list seen by the LLM (in system prompt):
-┌─────────────────────────────────────────────────────────────────┐
-│  Built-in tools (10):                                           │
-│    Read, Grep, Glob, SemanticSearch, StrReplace, Write,         │
-│    Shell, ReadLints, Task, CallMcpTool                          │
-│                                                                 │
-│  MCP: GitLens (5 tools):                                        │
-│    get_file_blame, get_file_changes, get_commit_details,        │
-│    get_working_changes, search_commits                          │
-│                                                                 │
-│  MCP: Serena (8 tools):                                         │
-│    find_symbol, get_symbols_overview, find_referencing_symbols,  │
-│    replace_symbol_body, insert_before_symbol,                   │
-│    insert_after_symbol, search_for_pattern, list_dir            │
-│                                                                 │
-│  MCP: Database (4 tools):                                       │
-│    run_query, list_tables, describe_table, get_schema           │
-│                                                                 │
-│  Total: 27 tools                                                │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-The model must pick the right tool from all 27 on every iteration.
-Here is how it works:
-
-#### The Decision Is Description-Driven, Not Server-Driven
-
-The model does **not** think "I should use the Serena MCP server."
-It thinks "I need to find all references to PersonService" and then
-scans all 27 tool descriptions for the best match. The fact that
-`find_referencing_symbols` comes from Serena is irrelevant to the
-model -- it only cares about the tool's description and parameters.
-
-This means **tool description quality is the primary factor** in
-whether an MCP tool gets selected:
-
-| Description Quality                                    | Will the model pick it?           |
-|--------------------------------------------------------|-----------------------------------|
-| `"find_referencing_symbols: Find all symbols that reference the given symbol, including call sites, imports, and type references. Returns code snippets and file locations."` | Yes -- clear, specific, matches many intents |
-| `"find_refs: Find refs"` | Rarely -- too vague, the model cannot tell what it does |
-| `"tool_7: Execute operation type 3 on the codebase"` | Never -- incomprehensible description |
-
-#### How the Model Resolves Overlapping Tools
-
-Multiple tools can serve similar purposes. When the model sees
-overlapping capabilities, it uses several heuristics to choose:
-
-```mermaid
-sequenceDiagram
-    participant LLM
-    participant Runtime as Agent Runtime
-    participant Grep as Built-in Grep
-    participant Serena as MCP: Serena
-    participant GitLens as MCP: GitLens
-
-    Note over LLM: User asked: "Who last modified the<br/>PersonService validation logic and<br/>find all places that call validate()?"
-    
-    Note over LLM: DECISION 1: "Who last modified" →<br/>git history → get_file_blame (GitLens)<br/><br/>DECISION 2: "find all places that call" →<br/>reference search → find_referencing_symbols (Serena)<br/><br/>Both are independent → emit parallel calls
-
-    LLM->>Runtime: Two tool calls (parallel)
-    
-    par Tool call 1
-        Runtime->>GitLens: get_file_blame("PersonServiceImpl.java")
-        GitLens-->>Runtime: Blame data: last modified by dev@team.com, 3 days ago
-    and Tool call 2
-        Runtime->>Serena: find_referencing_symbols("validate", depth=1)
-        Serena-->>Runtime: Called from PersonController.create(), PersonControllerTest
-    end
-
-    Runtime->>LLM: Both results injected
-    Note over LLM: Synthesize: "The validation logic was<br/>last modified by dev@team.com 3 days ago.<br/>validate() is called from PersonController<br/>and PersonControllerTest."
-```
-
-The model chose GitLens for git history and Serena for code references
-because each tool's description matched the specific sub-task. Built-in
-Grep was **not** chosen even though it could find the text "validate"
-because the model recognized that semantic reference search is more
-precise than text matching for this request.
-
-#### Resolution Heuristics
-
-When multiple tools could handle the same intent, the model applies
-these implicit priorities:
-
-| Heuristic                          | Example                                    | Effect                                    |
-|------------------------------------|--------------------------------------------|-------------------------------------------|
-| **Specificity wins**               | `find_referencing_symbols` vs `Grep`       | Specialized tool beats general-purpose     |
-| **Description match**              | "find symbol" matches `find_symbol` over `search_for_pattern` | Closer semantic match wins |
-| **Minimize round-trips**           | One tool returning structured data vs two tools returning raw text | Fewer iterations preferred |
-| **Prefer read-only first**         | `get_symbols_overview` before `replace_symbol_body` | Gather context before acting |
-| **Built-in for simple tasks**      | `Read` for reading a known file path       | No MCP overhead for basic operations      |
-| **MCP for domain-specific tasks**  | `run_query` for database operations        | Only MCP can reach external systems       |
-
-#### When Tool Selection Goes Wrong
-
-The model can make suboptimal tool choices. Common failure modes:
-
-**Problem: Vague tool descriptions**
-
-If two MCP tools have similar vague descriptions, the model may pick the
-wrong one or hesitate between them. Fix this by writing precise, distinct
-descriptions for each tool.
-
-**Problem: Too many tools**
-
-With 50+ tools, the tool schemas alone consume 5K-10K tokens of the context
-window, and the model has more options to get confused by. Each MCP server
-you add increases system prompt size and selection complexity.
-
-**Problem: Missing tool**
-
-If no tool matches the intent, the model will improvise -- often by using
-Shell to run a command, or by using Grep as a fallback for any search task.
-This produces lower-quality results than a purpose-built tool.
-
-**Mitigation strategies:**
-
-1. **Write descriptive tool descriptions** when building MCP servers.
-   Include the use case, not just the function signature.
-2. **Limit connected MCP servers** to those you actually use. Disconnect
-   servers you are not actively working with.
-3. **Use AGENTS.md to guide tool preference** -- you can add instructions
-   like "For code reference searches, prefer the Serena MCP tools over
-   built-in Grep when available."
-
-#### Guiding Tool Selection via AGENTS.md
-
-You can influence the model's tool selection by adding hints in AGENTS.md.
-Because AGENTS.md sits early in the context window (section 5), these
-hints are seen on every iteration:
-
-```markdown
-## Tool Usage Preferences
-
-- For finding symbol references and call sites, use Serena's
-  `find_referencing_symbols` tool instead of Grep
-- For git blame and commit history, use GitLens MCP tools
-- For database schema questions, use the Database MCP `describe_table`
-  tool before writing SQL queries
-- Use built-in Grep only for literal text pattern matching
-```
-
-This is not a hard rule -- the model can still choose differently if
-the context suggests it -- but it provides a strong default preference
-that resolves ambiguity in most cases.
 
 ---
 
@@ -747,398 +508,53 @@ RAG retrieval quality is directly affected by:
 ## 5. Context Engineering
 
 Context engineering is the discipline of controlling **what information
-the LLM sees** when it processes your request. It is the most
-high-leverage skill in AI-assisted development because the same model
-produces dramatically different results depending on what is in its
-context window.
+the LLM sees** when it processes your request. The same model produces
+dramatically different results depending on what fills the context window.
 
-### The Context Window Anatomy
+### The Context Window Stack
 
-When the agent runtime calls the LLM, it assembles a context from
-multiple sources. Here is the full stack, in the order it is typically
-assembled:
+When the agent runtime calls the LLM, it assembles context from multiple
+layers (roughly in this order):
 
 ```text
 ┌──────────────────────────────────────────────────────────────────┐
 │                    LLM Context Window (~200K tokens)              │
 │                                                                  │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  1. System Prompt (IDE-injected)                     ~5K  │   │
-│  │     - Model persona and safety rules                      │   │
-│  │     - Tool schemas (built-in + MCP)                       │   │
-│  │     - IDE-specific instructions                           │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  2. AGENTS.md / Rules (project-level)                ~2K  │   │
-│  │     - Architecture rules, naming conventions              │   │
-│  │     - Technology stack description                        │   │
-│  │     - Team guidelines                                     │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  3. SKILL.md (if activated)                          ~1K  │   │
-│  │     - Skill-specific instructions and examples            │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  4. RAG-Retrieved Chunks (automatic)                 ~5K  │   │
-│  │     - Code fragments relevant to the query                │   │
-│  │     - Selected by vector similarity                       │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  5. Open Files / Cursor Position                     ~3K  │   │
-│  │     - Currently visible file(s) in the editor             │   │
-│  │     - Cursor location for inline suggestions              │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  6. Conversation History                         variable  │   │
-│  │     - All prior messages in this chat session             │   │
-│  │     - All prior tool calls and results                    │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  7. Tool Results (accumulated during agent loop)  variable │   │
-│  │     - File contents from Read calls                       │   │
-│  │     - Search results from Grep / SemanticSearch           │   │
-│  │     - MCP tool outputs                                    │   │
-│  │     - Shell command outputs                               │   │
-│  └────────────────────────────────────────────────────────────┘   │
-│  ┌────────────────────────────────────────────────────────────┐   │
-│  │  8. User Message (your prompt)                       ~0.5K│   │
-│  │     - The actual question or instruction                  │   │
-│  └────────────────────────────────────────────────────────────┘   │
+│  1. System prompt + tool schemas (built-in + MCP)           ~5K   │
+│  2. AGENTS.md / project rules                             ~2K   │
+│  3. SKILL.md (if activated)                               ~1K   │
+│  4. RAG-retrieved code chunks                             ~5K   │
+│  5. Open files / cursor position                          ~3K   │
+│  6. Conversation history                              variable  │
+│  7. Tool results (Read, Grep, Shell, MCP, …)          variable  │
+│  8. Your message (the prompt)                          ~0.5K   │
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-### Context Assembly Sequence
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant IDE
-    participant RAG as RAG Index
-    participant Rules as AGENTS.md / Skills
-    participant Agent as Agent Runtime
-    participant LLM
-
-    User->>IDE: Types a message
-    
-    par Assemble context layers
-        IDE->>Rules: Load AGENTS.md + active SKILL.md
-        Rules-->>IDE: Project rules and skill instructions
-    and
-        IDE->>RAG: Embed user message → vector search
-        RAG-->>IDE: Top-K relevant code chunks
-    and
-        IDE->>IDE: Collect open files, cursor position, lints
-    end
-
-    IDE->>Agent: Package: system prompt + rules + RAG chunks + open files + conversation history + user message
-    Agent->>LLM: Send assembled context
-    LLM-->>Agent: Response (text or tool calls)
-    
-    Note over Agent: If tool calls: execute them,<br/>append results to context,<br/>call LLM again (agent loop)
-```
-
-### The Context Budget
-
-A 200K token context window sounds large, but it fills up fast:
-
-| Source                     | Typical Size   | Notes                              |
-|----------------------------|----------------|------------------------------------|
-| System prompt + tool schemas | 3K-8K tokens | Grows with each MCP server added   |
-| AGENTS.md                  | 500-2K tokens  | You control this                   |
-| RAG chunks (5 chunks)      | 2K-5K tokens   | Automatic                          |
-| Open files (2 files)       | 1K-4K tokens   | What you have open in editor       |
-| Conversation history       | 0-100K tokens  | Grows with every exchange          |
-| Tool results (per iteration)| 0.5K-10K tokens| Each file read, grep, etc.         |
-| **Your message**           | 50-500 tokens  | Your actual prompt                 |
-
-After 10-15 back-and-forth exchanges with multiple file reads, the
-conversation history alone can consume 50K-100K tokens. This is why
-long conversations degrade in quality -- a phenomenon called **context
-rot**.
-
-### Context Rot: How Increasing Input Tokens Degrades Performance
-
-"Context rot" is the progressive degradation of LLM output quality as
-the context window fills up. Even though modern models accept 128K-200K
-tokens, their ability to **use** that context effectively is not uniform
-across the window. Understanding this effect is critical for anyone
-who relies on long agent sessions.
-
-#### The Mechanism: Attention Dilution
-
-Transformer-based LLMs process all input tokens through self-attention
-layers. Each token "attends" to every other token, but attention is
-a finite resource. As input length grows:
-
-1. **Attention per token decreases.** With 5K tokens, each token
-   receives 1/5000th of the attention budget. With 100K tokens, it
-   receives 1/100000th -- a 20x reduction.
-
-2. **Critical instructions get diluted.** Your AGENTS.md rules, the
-   user's intent, and the most recent tool result compete for attention
-   with thousands of tokens of old conversation history and stale file
-   contents.
-
-3. **The model "forgets" earlier context.** Not literally (all tokens
-   are still present), but practically -- the model's ability to recall
-   and act on information from early in the context window decreases
-   as the window grows.
-
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│           Attention Quality vs Context Length                       │
-│                                                                    │
-│  Quality                                                           │
-│  ▲                                                                 │
-│  │ ████                                                            │
-│  │ █████████                                                       │
-│  │ █████████████                                                   │
-│  │ ██████████████████                                              │
-│  │ ████████████████████████                                        │
-│  │ █████████████████████████████████                               │
-│  │ ████████████████████████████████████████████                    │
-│  │ ██████████████████████████████████████████████████████████████  │
-│  └─────────────────────────────────────────────────────────────►   │
-│   5K    20K    50K     80K    100K    128K    160K    200K tokens   │
-│                                                                    │
-│  Sweet spot: 5K-30K tokens                                         │
-│  Diminishing returns: 30K-80K tokens                               │
-│  Significant degradation: 80K+ tokens                              │
-└────────────────────────────────────────────────────────────────────┘
-```
-
-#### The "Lost in the Middle" Problem
-
-Research (Liu et al., 2023) demonstrated that LLMs have a **U-shaped
-attention curve**: they pay most attention to tokens at the **beginning**
-and **end** of the context window, and least attention to tokens in the
-**middle**.
-
-```text
-┌────────────────────────────────────────────────────────────────────┐
-│                   Attention Distribution                            │
-│                                                                    │
-│  Attention                                                         │
-│  ▲                                                                 │
-│  │ ████                                              ████████████ │
-│  │ ██████                                          ██████████████ │
-│  │ ████████                                      ████████████████ │
-│  │ ██████████                                  ██████████████████ │
-│  │ ████████████                              ████████████████████ │
-│  │ ████████████████                    ██████████████████████████ │
-│  │ ██████████████████████████████████████████████████████████████ │
-│  └─────────────────────────────────────────────────────────────►   │
-│   Beginning          Middle                          End           │
-│   (system prompt,    (old conversation,       (recent tool results,│
-│    AGENTS.md)         stale file reads)        user message)       │
-│                                                                    │
-│   HIGH attention     LOW attention             HIGH attention      │
-└────────────────────────────────────────────────────────────────────┘
-```
-
-This has direct implications for how AI assistants behave:
-
-| Position in Context              | What Lives Here             | Attention Level | Implication                                     |
-|----------------------------------|-----------------------------|-----------------|-------------------------------------------------|
-| Beginning (first ~10K tokens)    | System prompt, AGENTS.md    | High            | Rules defined here are reliably followed         |
-| Middle (10K-150K tokens)         | Old messages, stale reads   | Low             | Earlier instructions may be "forgotten"          |
-| End (last ~5K tokens)            | Latest tool result, prompt  | High            | Your current message gets strong attention        |
-
-#### How Context Rot Manifests in Practice
-
-You have likely experienced these symptoms without knowing the cause:
-
-**Symptom 1: The model "forgets" your architecture rules**
-
-After 15+ messages, the model starts generating code that violates
-your AGENTS.md conventions -- returning entities instead of DTOs,
-putting logic in controllers, using wrong naming patterns. The
-AGENTS.md rules are still in the context (at the beginning), but 100K
-tokens of conversation history have pushed them into the low-attention
-zone.
-
-**Symptom 2: The model contradicts its own earlier analysis**
-
-In message 5, the model correctly identified that `PersonService`
-uses `@Transactional`. In message 20, it generates code that duplicates
-the transaction boundary. The earlier analysis has rotted -- the model
-can no longer effectively retrieve it from the bloated context.
-
-**Symptom 3: Repetitive tool calls**
-
-The model re-reads files it already read 10 messages ago. The earlier
-read result is still in the context, but the model cannot effectively
-attend to it through the noise of intervening messages, so it reads
-the file again.
-
-**Symptom 4: Declining code quality over time**
-
-The first few responses in a conversation are sharp and follow
-conventions. By message 20, responses become generic, miss edge
-cases, and ignore project-specific patterns. Same model, same
-AGENTS.md -- but the context has rotted.
-
-#### Context Rot in the Agent Loop
-
-The agent loop (section 1) amplifies context rot because each
-iteration adds more tokens:
-
-```mermaid
-sequenceDiagram
-    participant Agent as Agent Runtime
-    participant LLM
-
-    Note over Agent: Iteration 1: context = 15K tokens
-    Agent->>LLM: System + AGENTS.md + RAG + user message
-    LLM-->>Agent: Tool call (Read file) → +2K tokens
-
-    Note over Agent: Iteration 2: context = 17K tokens
-    Agent->>LLM: Everything above + file contents
-    LLM-->>Agent: Tool call (Grep) → +3K tokens
-
-    Note over Agent: Iteration 3: context = 20K tokens
-    Agent->>LLM: Everything above + grep results
-    LLM-->>Agent: Tool call (Read another file) → +4K tokens
-
-    Note over Agent: Iteration 4: context = 24K tokens
-    Agent->>LLM: Everything above + second file
-    LLM-->>Agent: Tool call (Edit file) → +1K tokens
-
-    Note over Agent: Iteration 5: context = 25K tokens
-    Agent->>LLM: Everything above + edit result
-    LLM-->>Agent: Final text response
-
-    Note over Agent: 5 iterations added 10K tokens.<br/>A complex task with 15 iterations can add<br/>30K-50K tokens from tool results alone.
-```
-
-After many iterations, the context is dominated by tool results from
-early iterations that are no longer relevant. The model's instructions
-(AGENTS.md, user prompt) become a small fraction of the total context.
-
-#### Quantifying the Rot
-
-Here is a concrete example of how a 20-message conversation
-accumulates context:
-
-| Message # | New Tokens Added     | Cumulative Total | Signal-to-Noise Ratio          |
-|-----------|----------------------|------------------|--------------------------------|
-| 1         | 15K (system + rules + RAG + prompt) | 15K | High -- mostly relevant context |
-| 5         | 5K (tool results + responses) | 35K | Good -- recent context is relevant |
-| 10        | 5K per message       | 60K              | Moderate -- old messages are stale |
-| 15        | 5K per message       | 85K              | Low -- middle zone is noise     |
-| 20        | 5K per message       | 110K             | Poor -- instructions are diluted |
-
-At message 20, your 2K-token AGENTS.md represents less than 2% of the
-total context. The model must find and follow those rules among 110K
-tokens of accumulated history.
-
-#### Strategies to Combat Context Rot
-
-**Strategy 1: Start fresh conversations frequently**
-
-The single most effective defense. Each new conversation resets the
-context to ~15K tokens (system + AGENTS.md + RAG + your prompt).
-Start a new conversation when:
-- You shift to a different task
-- You notice quality degrading
-- You have exchanged more than 10-15 messages
-
-**Strategy 2: Use subagents for multi-step work**
-
-Each subagent ([Section 11](11-agents-subagents.md)) gets a fresh
-context window. Instead of one 20-iteration agent loop, split the
-work across 3-4 subagents with 5 iterations each. Each subagent
-operates in the high-quality zone of its context window.
-
-**Strategy 3: Repeat critical instructions in your prompt**
-
-If a conversation is long and you cannot start fresh, repeat the
-most important constraints directly in your message. Text at the
-**end** of the context window gets high attention (the recency effect):
-
-```
-Generate the OrderService.cancel() method.
-
-REMINDER: Use Java records for DTOs. Return OrderResponse, not
-the Order entity. Place @Transactional on the service method.
-```
-
-This redundancy is deliberate -- it re-surfaces rules that may have
-rotted in the middle of the context.
-
-**Strategy 4: Keep AGENTS.md concise**
-
-A 5K-token AGENTS.md is harder for the model to attend to than a
-500-token one. Prioritize density over completeness. Every token in
-AGENTS.md competes with every other token in the context window.
-
-**Strategy 5: Avoid unnecessary tool output**
-
-Large tool results (full file contents, verbose grep output, long
-shell output) bloat the context without adding proportional value.
-When writing 09-skills.md or commands, prefer targeted reads (specific
-line ranges) over full file reads. This keeps the context lean
-and reduces rot rate.
-
-**Strategy 6: Be aware of the cost multiplier**
-
-Context rot is not just a quality problem -- it is a cost problem.
-Each iteration of the agent loop re-sends the **entire** accumulated
-context to the LLM. A conversation at 100K tokens costs roughly 7x
-more per iteration than one at 15K tokens (for the input token
-charges alone). Starting fresh is cheaper in both quality and money.
-
-| Conversation State | Context Size | Input Cost Multiplier | Quality  |
-|--------------------|-------------|----------------------|----------|
-| Fresh (message 1)  | ~15K tokens | 1x (baseline)        | Peak     |
-| Mid (message 10)   | ~60K tokens | 4x                   | Good     |
-| Long (message 20)  | ~110K tokens| 7x                   | Degraded |
-| Exhausted (30+)    | ~160K tokens| 11x                  | Poor     |
+As conversation history and tool outputs accumulate, **context rot** sets in:
+instructions at the beginning (including AGENTS.md) get harder to follow,
+and each agent-loop iteration re-sends the full accumulated context.
 
 ### Why AGENTS.md Is the Highest-Leverage Context
 
-Look at the context stack above. AGENTS.md sits at position 2 --
-right after the system prompt. It is:
+AGENTS.md sits near the top of the stack. It is:
 
-1. **Always present**: injected into every single LLM call
-2. **Early in context**: models pay more attention to early tokens
-3. **Under your control**: unlike the system prompt, you write it
-4. **Small but dense**: 500-2000 tokens of pure signal
+1. **Always present** — injected on every LLM call
+2. **Early in context** — models attend more to early tokens
+3. **Under your control** — unlike the IDE system prompt
+4. **Small but dense** — 500–2000 tokens of pure signal
 
-This is why a well-written AGENTS.md (Section 8) produces better
-results than any amount of per-prompt optimization. The rules in
-AGENTS.md are seen by the model on every iteration of every agent
-loop, for every request in the project.
+A well-written AGENTS.md ([Section 8](08-agents-md.md)) beats per-prompt
+tweaks because those rules are seen on every iteration of every agent loop.
 
-### Context Engineering Strategies
+### Where to Go Deeper
 
-**Strategy 1: Keep conversations short**
+| Topic | Section |
+|-------|---------|
+| Context rot, token budget, task-type strategies | [Section 6: Context](06-context.md) |
+| Child sessions, compaction, WORKFLOW_STATE handoff | [Section 12: Agent Sessions](12-agent-sessions.md) |
+| Subagent orchestration and phase gates | [Section 11: Agents & Subagents](11-agents-subagents.md) |
 
-Start new conversations for new tasks. A fresh context window means
-the model's full attention is on your current request.
-
-**Strategy 2: Be deliberate about open files**
-
-The IDE includes your open files in the context. Close irrelevant
-files before asking complex questions. Open the files you want the
-model to reference.
-
-**Strategy 3: Use @ references instead of pasting code**
-
-In Cursor, `@file.java` or `@symbol` tells the IDE to include specific
-context. This is more precise than pasting code into the chat, and the
-IDE can include metadata (line numbers, file path) that helps the model.
-
-**Strategy 4: Front-load critical rules in AGENTS.md**
-
-Put the most important architecture rules at the top of AGENTS.md.
-The model pays more attention to text that appears earlier in context.
-
-**Strategy 5: Use subagents for complex tasks**
-
-Each subagent (Section 11) gets a fresh 200K context window. For tasks
-with many files and complex reasoning, splitting the work across
-subagents prevents context overflow in any single window.
 
 ---
 
@@ -1150,8 +566,8 @@ chunks, and AGENTS.md controls the project rules -- your prompt is the
 direct instruction that drives the model's behavior for this specific
 request.
 
-Sections [2 (Prompting)](03-prompting.md) and
-[3 (Prompt Techniques)](04-prompt-techniques.md) cover this topic in
+Sections [3 (Prompting)](03-prompting.md) and
+[4 (Prompt Techniques)](04-prompt-techniques.md) cover this topic in
 depth. Here we place prompt engineering in the context of the full
 architecture you have just learned.
 
@@ -1180,11 +596,11 @@ prompt rides on top of that assembled context.
 
 ### Prompt Engineering Is Context Engineering
 
-When you apply the techniques from Sections 2 and 3, you are not just
+When you apply the techniques from Sections 3 and 4, you are not just
 writing a better question -- you are engineering the bottom layer of
 the context stack:
 
-| Technique (Section 2/3)       | What It Does to the Context                     |
+| Technique (Section 3/4)       | What It Does to the Context                     |
 |------------------------------|--------------------------------------------------|
 | CO-STAR framework            | Adds role, style, audience, format to your message |
 | Few-shot examples            | Adds input-output pairs the model can pattern-match |
@@ -1408,7 +824,7 @@ with the concrete tool names the LLM can call at each stage.
 
 Here is what it looks like when an MCP server is configured and the agent
 uses it during a real task. This is a taste of what you will build in
-[Section 12: MCP Servers](12-mcp-servers.md).
+[Section 13: MCP Servers](13-mcp-servers.md).
 
 **Configuration** (in `.cursor/mcp.json`):
 ```json
@@ -1439,7 +855,7 @@ Agent:     [calls MCP tool: postgres.describe_table("persons")]
 The agent chose `describe_table` from the MCP server because its
 description matched the intent better than any built-in tool. No prompt
 engineering was needed — MCP tool descriptions drive selection
-automatically. See [Section 12](12-mcp-servers.md) for the full setup
+automatically. See [Section 13](13-mcp-servers.md) for the full setup
 guide, custom server development, and advanced patterns.
 
 ---
@@ -1451,6 +867,8 @@ It does not. Each conversation starts with a blank context window. The
 only persistence comes from files on disk — `AGENTS.md`, rules, and your
 source code. If the assistant seems to "remember" something, it is
 because it re-read a file or RAG re-retrieved the same chunk.
+See [12-agent-sessions.md](12-agent-sessions.md) for session types, lifecycle, and
+cross-session handoff patterns.
 
 **"The AI reads my entire codebase."**
 The context window is finite (128K-200K tokens). A medium Java project

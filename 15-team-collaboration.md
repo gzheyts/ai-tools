@@ -1,9 +1,19 @@
-# Section 14: Team Collaboration
+# Section 15: Team Collaboration
 
 Individual AI assistant setups get you started. Team-wide AI practices
 multiply the benefit. This section covers how to share AI configurations,
 maintain prompt quality across a team, onboard new developers with AI
 context, and review AI-related changes in pull requests.
+
+| Section | Topic |
+|---------|-------|
+| [1. Sharing AGENTS.md](#1-sharing-agentsmd-across-a-team) | Repository strategy, multi-repo sharing |
+| [2. Skills as a Team Library](#2-skills-as-a-team-library) | Organization, naming, review process |
+| [3. Onboarding New Developers](#3-onboarding-new-developers-with-ai-context) | Checklist, first-week challenge |
+| [4. Prompt Review in PRs](#4-prompt-review-in-pull-requests) | When to review, PR template |
+| [5. Measuring Effectiveness](#5-measuring-team-ai-effectiveness) | Metrics, retrospective questions |
+
+---
 
 ## 1. Sharing AGENTS.md Across a Team
 
@@ -96,8 +106,7 @@ ai-prompts/
 │       └── SKILL.md           # v1.3.0
 ├── commands/
 │   ├── cursor/
-│   ├── opencode/
-│   └── sourcecraft/
+│   └── opencode/
 ├── CHANGELOG.md
 └── README.md
 ```
@@ -135,43 +144,27 @@ Treat skills like code — they go through review:
 
 ## 3. Onboarding New Developers with AI Context
 
-### Onboarding Checklist
+Use [templates/team-onboarding.md](templates/team-onboarding.md) as the
+copy-paste onboarding doc for new hires. It includes the Day 1 checklist,
+first-week challenge, do/don't conventions, troubleshooting table, and links
+to this repo's guides.
 
-When a new developer joins the team:
+### Team-specific onboarding practices
 
-1. **Install the AI assistant** (Section 1)
-   - [ ] Cursor / OpenCode / SourceCraft installed
-   - [ ] CLI configured and working
-   - [ ] Model settings configured (which model, thinking mode)
+Beyond the template checklist:
 
-2. **Understand the AI context** (Sections 1-2)
-   - [ ] Read AGENTS.md and understand each section
-   - [ ] Know which skills are available and what they do
-   - [ ] Know which commands are available and when to use them
+1. **Assign an onboarding buddy** who has shipped at least one AI-assisted PR
+   using your project's skills and commands.
+2. **Walk through `context-map.md`** in the project repo — show which files
+   to open for a migration vs a bug fix ([Section 6: Context](06-context.md)).
+3. **First PR expectation:** new developers should use `/review` on their own
+   diff before requesting human review (Section 4 below).
+4. **Subagent intro (optional):** after the first week, point them to
+   [Section 11: Agents & Subagents](11-agents-subagents.md) for multi-step
+   workflows — not on Day 1.
 
-3. **Practice with a starter task** (Sections 5-7)
-   - [ ] Use `/endpoint` to generate a simple CRUD endpoint
-   - [ ] Use `/migration` to create a database migration
-   - [ ] Use `/test` to generate tests for the endpoint
-   - [ ] Use `/review` to review the generated code
-
-4. **Learn the team workflow** (this section)
-   - [ ] How to propose changes to AGENTS.md
-   - [ ] How to submit a new skill or improve an existing one
-   - [ ] When to use subagents vs single chat
-   - [ ] How to handle AI-generated code in PRs
-
-### First-Week AI Challenge
-
-Give new developers a structured first-week exercise:
-
-| Day | Task                                          | Sections to Reference |
-|-----|-----------------------------------------------|---------------------|
-| 1   | Set up the assistant, read AGENTS.md          | 0, 5                |
-| 2   | Generate a simple endpoint using commands     | 7, 9                |
-| 3   | Generate and debug a database migration       | 7, 10               |
-| 4   | Use a subagent workflow for a small feature   | 8                   |
-| 5   | Review a PR with the code-review skill        | 6                   |
+Customize the template per project: update the skills/commands table to match
+what you actually ship in `.cursor/commands/` and `skills/`.
 
 ## 4. Prompt Review in Pull Requests
 
@@ -255,7 +248,9 @@ Add these to your sprint retrospective:
 
 ---
 
-Proceed to [Section 15: Security & Privacy](15-security-and-privacy.md)
+## Next Section
+
+Proceed to [Section 16: Security & Privacy](16-security-and-privacy.md)
 to learn how to use AI assistants safely with sensitive codebases.
 
 ### Further Reading

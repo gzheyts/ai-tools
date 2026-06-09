@@ -6,6 +6,19 @@ hallucinated one. This section covers what goes into context, how the window
 fills up, practical strategies for Java development workflows, and agent-scale
 context engineering patterns.
 
+| Section | Topic |
+|---------|-------|
+| [Context vs. Prompt Engineering](#context-engineering-vs-prompt-engineering) | Scope and distinction |
+| [Why Context Engineering Matters](#why-context-engineering-matters) | Attention budget, context rot |
+| [Context Window Fundamentals](#context-window-fundamentals) | What fills the window, token budget |
+| [What Goes Into Context](#what-goes-into-context-and-when) | Automatic, on-demand, user-provided |
+| [Anatomy of Effective Context](#anatomy-of-effective-context) | Structure and prioritization |
+| [Retrieval and Agentic Search](#context-retrieval-and-agentic-search) | RAG, semantic search |
+| [Context Rot](#context-rot) | Symptoms and remedies |
+| [Long-Horizon Strategies](#strategies-for-long-horizon-tasks) | Compaction, note-taking, subagents |
+| [Context by Task Type](#context-strategy-by-task-type) | Feature, bug fix, review, migration |
+| [Advanced Techniques](#advanced-context-techniques) | Priming, checkpoints |
+
 ---
 
 ## Context Engineering vs. Prompt Engineering
@@ -177,8 +190,8 @@ conversation grows longer. It happens because:
 
 | Strategy                      | How                                              | When to Use                  |
 |-------------------------------|--------------------------------------------------|------------------------------|
-| **Start a new chat**         | Fresh context, re-state the task                 | Every 10–15 messages         |
-| **Use subagents**            | Each subagent gets a fresh window                | Multi-phase workflows        |
+| **Start a new chat**         | Fresh context, re-state the task — see [12-agent-sessions.md](12-agent-sessions.md) for specific split triggers | Every 10–15 messages |
+| **Use subagents**            | Each subagent gets a fresh window — see [12-agent-sessions.md](12-agent-sessions.md) for child session mechanics | Multi-phase workflows |
 | **Close irrelevant tabs**    | Reduce automatic context noise                   | Before starting a new task   |
 | **Summarize progress**       | "So far we've done X. Now do Y."                 | When continuing a long task  |
 | **Re-attach key files**      | Reference the critical file again                | When AI forgets file contents|
@@ -198,11 +211,17 @@ Three techniques for managing tasks that exceed the context window:
   content).
 - Lightest-touch version: clearing old tool call results from history.
 
+For the full compaction treatment — trigger threshold, what survives, what is discarded,
+and recovery steps — see [12-agent-sessions.md — Compaction](12-agent-sessions.md).
+
 ### Structured Note-Taking
 
 - The agent writes notes to external memory (e.g., a `NOTES.md` file, a to-do list)
   and pulls them back in later.
 - Provides persistent memory with minimal context overhead across long tasks.
+
+For a concrete implementation of this pattern across agent sessions, see
+[`WORKFLOW_STATE.md` in 12-agent-sessions.md](12-agent-sessions.md).
 
 ### Sub-Agent Architectures
 
@@ -211,6 +230,9 @@ Three techniques for managing tasks that exceed the context window:
 - Sub-agents may consume tens of thousands of tokens internally but return only a
   **condensed summary** (1,000–2,000 tokens) to the lead agent.
 - Achieves clear separation of concerns and enables parallel exploration.
+
+For child session mechanics and parallel session semantics, see
+[12-agent-sessions.md — Child Session Mechanics](12-agent-sessions.md).
 
 See [Section 11: Agents & Subagents](11-agents-subagents.md) and
 [opencode-agent-patterns/](opencode-agent-patterns/) for orchestration patterns.
@@ -365,4 +387,6 @@ to learn how to debug and improve your prompts systematically.
 - [Section 8: AGENTS.md](08-agents-md.md) — writing concise project context
 - [Section 11: Agents & Subagents](11-agents-subagents.md) — context-fresh
   subagent workflows
-- [Section 12: MCP Servers](12-mcp-servers.md) — controlling MCP tool context cost
+- [12-agent-sessions.md](12-agent-sessions.md) — session lifecycle, compaction details,
+  WORKFLOW_STATE.md handoff, when to split sessions
+- [Section 13: MCP Servers](13-mcp-servers.md) — controlling MCP tool context cost
