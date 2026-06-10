@@ -15,6 +15,7 @@ unwieldy. Everything applies to AGENTS.md, skills, and custom commands.
 | [2. Taxonomy of Failures](#2-taxonomy-of-prompt-failures) | Vague outputs, ignored instructions, scope creep |
 | [3. Debugging Methodology](#3-debugging-methodology) | Isolate, ablate, contrast, trace |
 | [4. Optimization Workflow](#4-optimization-workflow) | Golden test set, baseline, validate |
+| [4.6 Token Efficiency](#46-token-efficiency) | Lazy loading, progressive disclosure, context budgeting |
 | [5. Quality Measurement](#5-quality-measurement----what-does-better-mean) | Scoring dimensions |
 | [6. Tools and Mechanics](#6-tools-and-mechanics) | In-IDE tools, external evaluators |
 | [7. Applying to Config Files](#7-applying-to-agentsmd-skills-and-commands) | AGENTS.md, skills, commands |
@@ -398,6 +399,155 @@ After:
   skills/code-review/SKILL.md: Review checklist
   skills/db-migration/SKILL.md: Database rules
 ```
+
+### 4.6 Token Efficiency
+
+Every token in the context window has a cost: API billing, latency, and
+attention degradation. Token efficiency is not about writing shorter prompts
+for their own sake -- it is about spending tokens where they add value and
+deferring everything else. See [Section 6: Context](06-context.md) for the
+broader context engineering discipline; this section focuses on practical
+optimizations for user prompts, AGENTS.md, skills, and commands.
+
+#### The Three Token Sinks
+
+| Sink | When it loads | Optimization lever |
+|------|---------------|-------------------|
+| **Always-on context** (AGENTS.md, tool schemas) | Every interaction | Keep lean; extract to skills |
+| **On-demand context** (skills, commands) | When triggered | Lazy-load via description |
+| **Per-turn growth** (history, tool output) | Accumulates over session | New chats, compaction, scope limits |
+
+#### Prompt Engineering: Spend Tokens on Signal
+
+**Write the task once.** Rephrasing the same constraint three ways triples
+tokens without tripling clarity. State each rule once, with MUST/NEVER language.
+
+**Front-load static, trail-load dynamic.** Place stable content (role, rules,
+format) at the top; put variable content (file names, user arguments, current
+error) at the end. Provider prompt caching rewards identical prefixes across
+requests -- a static-first structure can cut recurring costs when AGENTS.md
+and skills load every turn. See
+[OpenAI Prompt Caching](https://platform.openai.com/docs/guides/prompt-caching)
+and [Anthropic Prompt Caching](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching).
+
+**Anchor output, don't narrate it.** "Output ONLY the XML -- no explanation"
+costs a handful of tokens and can save hundreds in the response. Pair with an
+output primer (Section 4.5) so the model knows exactly what to produce.
+
+**One example beats three vague rules.** A single few-shot example often
+costs fewer tokens than three paragraphs of prose -- and produces more
+consistent output. Use examples for format and tone; use rules for constraints.
+Move large examples to `references/` files the agent reads on demand.
+
+**Avoid chain-of-thought in production prompts.** "Think step by step" adds
+reasoning tokens to every response. Use it temporarily for debugging
+(Section 3, Step 4: Trace); remove it once the prompt works.
+
+#### Context Management: Load on Demand
+
+**The AGENTS.md budget.** Treat AGENTS.md as a fixed per-request tax.
+Target under 150 lines for cross-cutting rules only. Everything else belongs
+in skills. Subdirectory AGENTS.md files add more tax when working in that
+directory. See [Section 8: AGENTS.md](08-agents-md.md).
+
+**Skills as lazy-loading units.** Skills load in two stages:
+
+1. **Metadata** (~50 tokens): `name` + `description` always in context
+2. **Body** (200--2000 tokens): loaded only when the task matches
+
+This is lazy loading in practice: the agent sees what skills exist without
+paying for instructions it does not need. Design descriptions as precise
+trigger keywords. See [agentskills.io](https://agentskills.io/specification)
+and [Section 9: Skills](09-skills.md).
+
+**Commands as user-triggered bursts.** Custom commands load only when you
+type `/name` -- zero cost until invoked. Prefer commands for workflows you
+control; prefer skills for capabilities the agent should auto-detect.
+
+**Externalize large reference material.** Put code examples, API specs, and
+style guides in `references/` or `templates/` subfolders. The skill body says
+"Follow patterns in `references/service-test-example.java`" -- the agent
+reads the file only when executing the skill, not on every turn.
+
+#### Advanced Techniques
+
+**Progressive disclosure (three tiers).** Mature agent systems use layered
+loading:
+
+- **Tier 1 -- Metadata**: name, description, one-line capability (~50 tokens)
+- **Tier 2 -- Instructions**: full SKILL.md body, loaded on intent match
+- **Tier 3 -- Assets**: scripts, templates, large references, loaded on execution
+
+Do not put Tier 3 content in Tier 1. A skill that embeds a 40-line Java
+example in `SKILL.md` pays that cost even when the skill never triggers.
+See [Lazy Skills: Token-Efficient Dynamic Agent Capabilities](https://boliv.substack.com/p/lazy-skills-a-token-efficient-approach).
+
+**Lazy schema / tool loading.** MCP servers and agent toolsets can consume
+10,000+ tokens when all tool schemas load upfront. Dynamic toolset patterns
+load tool names first and fetch full schemas only when the agent selects a
+tool -- reducing input tokens by up to 96% in production systems. Apply the
+same principle to skills: keep `description` lean; defer heavy content.
+See [Speakeasy -- Dynamic Toolsets](https://www.speakeasy.com/blog/how-we-reduced-token-usage-by-100x-dynamic-toolsets-v2).
+
+**Session boundaries as garbage collection.** Long conversations accumulate
+tool results, failed attempts, and digressions. Start a new chat when:
+
+- Switching tasks (implementation -> tests -> review)
+- The agent starts referencing stale context
+- A focused subtask does not need prior history
+
+For structured handoff between sessions, write state to a file
+(`WORKFLOW_STATE.md`) rather than pasting full history. See
+[Section 12: Agent Sessions](12-agent-sessions.md).
+
+**Subagent summaries, not subagent dumps.** When spawning subagents, instruct
+them to return a condensed summary (findings, file paths, next steps) -- not
+full transcripts. The lead agent needs conclusions, not the subagent's entire
+reasoning chain. See [Section 11: Agents & Subagents](11-agents-subagents.md).
+
+**Compaction and note-taking.** Summarize conversation history when sessions
+run long; persist key decisions in external files. See
+[Section 6: Context -- Long-Horizon Strategies](06-context.md#strategies-for-long-horizon-tasks).
+
+**Pointers, not payloads.** When one agent hands off to another, pass file
+paths, task IDs, and decision summaries -- not the full prior context window.
+The receiving agent reads what it needs via tools. See
+[Anthropic -- Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents).
+
+#### Quick Decision Matrix
+
+| Content | Put it in... | Why |
+|---------|-------------|-----|
+| Java version, build commands, layer rules | AGENTS.md | Always needed |
+| Test generation conventions | `generate-tests` skill | Only when writing tests |
+| Code review checklist | `code-review` skill | Only when reviewing |
+| `/migration` workflow | Custom command | User-triggered, zero idle cost |
+| 40-line Java example | `references/` file | Read on demand |
+| Debugging reasoning | Temporary in prompt | Remove after fix |
+
+#### Practical Habits
+
+1. **Audit token-heavy files quarterly.** Run `wc -l AGENTS.md` and each
+   `SKILL.md`. Anything over 200 lines in AGENTS.md or 80 lines in a skill
+   body is a candidate for splitting or externalizing.
+2. **Use `opencode --no-context` to test skill isolation.** Confirms the
+   skill works without AGENTS.md padding (Section 6.1).
+3. **Prefer `@file` references over pasting code.** Attaching a file costs
+   tokens once; pasting the same code in chat creates a duplicate copy in
+   history on every follow-up.
+4. **Scope commands narrowly.** A `/review` command that checks six categories
+   costs more tokens in reasoning than one that checks two. Split into focused
+   commands or use a skill with a checklist the agent loads selectively.
+
+#### Further Reading
+
+- [Anthropic -- Effective Context Engineering for AI Agents](https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents) -- attention budget, compaction, subagent patterns
+- [Anthropic -- Prompt Engineering Best Practices](https://docs.anthropic.com/en/docs/build-with-claude/prompt-engineering) -- concise instructions, examples
+- [agentskills.io Specification](https://agentskills.io/specification) -- skill metadata and lazy-loading design
+- [Lazy Skills: Token-Efficient Dynamic Agent Capabilities](https://boliv.substack.com/p/lazy-skills-a-token-efficient-approach) -- three-tier progressive disclosure
+- [Speakeasy -- Reducing MCP Token Usage with Dynamic Toolsets](https://www.speakeasy.com/blog/how-we-reduced-token-usage-by-100x-dynamic-toolsets-v2) -- lazy schema loading
+- [OpenAI -- Prompt Caching](https://platform.openai.com/docs/guides/prompt-caching) -- static prefix caching for cost reduction
+- Liu et al. (2024). *Lost in the Middle*. [arxiv.org/abs/2307.03172](https://arxiv.org/abs/2307.03172)
 
 ---
 

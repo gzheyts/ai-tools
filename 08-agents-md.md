@@ -76,7 +76,10 @@ A production-quality `AGENTS.md` has these sections. Full copy-paste template:
 | **Database / CI / K8s** (optional) | Schema conventions, pipeline notes, deployment rules |
 
 Keep the file dense. Move detailed recipes into [Skills](09-skills.md) instead
-of bloating AGENTS.md.
+of bloating AGENTS.md. AGENTS.md is always-on context -- every line loads on
+every interaction, so treat it as a token budget, not a wiki. See
+[Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency)
+for lazy-loading patterns and progressive disclosure.
 
 ## Anti-Patterns to Avoid
 
@@ -265,7 +268,9 @@ An `AGENTS.md` that exceeds 200 lines wastes context tokens on every
 interaction. The model reads the entire file for every prompt, so every
 unnecessary line costs money and dilutes attention. Extract reusable,
 detailed patterns into Skills instead (see
-[Section 9: Skills](09-skills.md)).
+[Section 9: Skills](09-skills.md)). For the full token budgeting strategy
+-- including when to use subdirectory AGENTS.md vs. skills vs. commands --
+see [Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency).
 
 ### 2. Too Generic ("Follow Clean Code")
 

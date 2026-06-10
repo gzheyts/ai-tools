@@ -2,8 +2,11 @@
 
 Skills are modular, reusable instruction packages that AI assistants load
 **on demand** -- only when the task matches the skill's description.
-Unlike `AGENTS.md` (always loaded), skills save context tokens by activating
-only when relevant.
+Unlike `AGENTS.md` (always loaded), skills use **lazy loading**: only the
+`description` field stays in context (~50 tokens per skill); the full body
+(200--2000 tokens) loads when the task matches. Ten skills with lean
+descriptions cost ~500 tokens idle; the same content in AGENTS.md costs
+that amount on every single interaction.
 
 | Section | Topic |
 |---------|-------|
@@ -184,7 +187,11 @@ Without this, every invocation produces differently structured results.
 ### 4. Reference Files for Large Context
 If a skill needs access to large reference documents (API specs,
 style guides), put them in a `references/` subfolder rather than
-inlining everything in `SKILL.md`.
+inlining everything in `SKILL.md`. This is lazy loading at the asset
+tier: only the `description` (~50 tokens) sits in context until the
+skill triggers; the agent reads `references/` files via tools only when
+executing the task. A 40-line Java example inlined in `SKILL.md` costs
+tokens on every turn where the skill is listed, even when unused.
 
 ```
 generate-tests/
@@ -193,6 +200,9 @@ generate-tests/
     ├── testing-conventions.md
     └── object-mother-examples.md
 ```
+
+See [Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency)
+for progressive disclosure tiers and the AGENTS.md vs. skill token budget.
 
 ## Skill vs. AGENTS.md vs. Command
 

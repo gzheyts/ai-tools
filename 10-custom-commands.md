@@ -214,6 +214,16 @@ Explain why the change is beneficial.
 One command = one action. Don't combine review + test + deploy into
 a single command.
 
+### Minimize Token Cost
+Commands load only when you type `/name` -- zero idle cost -- but the
+prompt itself and every response still consume tokens. Keep command files
+short: state the task, constraints, and output format; reference
+`AGENTS.md` for project rules instead of duplicating them. Use output
+primers and "Output ONLY ... -- no explanation" to cap response length.
+Avoid permanent chain-of-thought in production commands; it adds
+reasoning tokens to every invocation. See
+[Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency).
+
 ### Use Project Context
 Commands work best when they reference `AGENTS.md` conventions:
 ```markdown
@@ -242,10 +252,11 @@ Applying prompt engineering principles (see
 [Section 3: Prompting](03-prompting.md)) makes your commands produce
 higher-quality, more consistent output:
 
-1. **Use chain-of-thought** (Principle 12) -- For review and analysis
-   commands, add "think step by step" to force the model to reason
-   through each category before producing findings. This prevents
-   superficial responses.
+1. **Use chain-of-thought sparingly** (Principle 12) -- For review and
+   analysis commands, "think step by step" improves depth but adds
+   reasoning tokens to every response. Use it while tuning a command;
+   remove it once output quality stabilizes. For production, prefer
+   numbered checklist steps over open-ended reasoning.
    ```markdown
    Think step by step through each category:
    1. First, check architecture layer boundaries
