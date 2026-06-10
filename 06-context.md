@@ -140,8 +140,8 @@ the likelihood of the desired outcome:
 - **Few-shot examples** — a small, diverse, canonical set rather than an exhaustive
   list of edge cases.
 
-Keep [AGENTS.md](08-agents-md.md) concise; extract verbose guidance into
-[skills](09-skills.md).
+Keep [AGENTS.md](09-agents-md.md) concise; extract verbose guidance into
+[skills](10-skills.md).
 
 ---
 
@@ -190,8 +190,8 @@ conversation grows longer. It happens because:
 
 | Strategy                      | How                                              | When to Use                  |
 |-------------------------------|--------------------------------------------------|------------------------------|
-| **Start a new chat**         | Fresh context, re-state the task — see [12-agent-sessions.md](12-agent-sessions.md) for specific split triggers | Every 10–15 messages |
-| **Use subagents**            | Each subagent gets a fresh window — see [12-agent-sessions.md](12-agent-sessions.md) for child session mechanics | Multi-phase workflows |
+| **Start a new chat**         | Fresh context, re-state the task — see [13-agent-sessions.md](13-agent-sessions.md) for specific split triggers | Every 10–15 messages |
+| **Use subagents**            | Each subagent gets a fresh window — see [13-agent-sessions.md](13-agent-sessions.md) for child session mechanics | Multi-phase workflows |
 | **Close irrelevant tabs**    | Reduce automatic context noise                   | Before starting a new task   |
 | **Summarize progress**       | "So far we've done X. Now do Y."                 | When continuing a long task  |
 | **Re-attach key files**      | Reference the critical file again                | When AI forgets file contents|
@@ -212,7 +212,7 @@ Three techniques for managing tasks that exceed the context window:
 - Lightest-touch version: clearing old tool call results from history.
 
 For the full compaction treatment — trigger threshold, what survives, what is discarded,
-and recovery steps — see [12-agent-sessions.md — Compaction](12-agent-sessions.md).
+and recovery steps — see [13-agent-sessions.md — Compaction](13-agent-sessions.md).
 
 ### Structured Note-Taking
 
@@ -221,7 +221,7 @@ and recovery steps — see [12-agent-sessions.md — Compaction](12-agent-sessio
 - Provides persistent memory with minimal context overhead across long tasks.
 
 For a concrete implementation of this pattern across agent sessions, see
-[`WORKFLOW_STATE.md` in 12-agent-sessions.md](12-agent-sessions.md).
+[`WORKFLOW_STATE.md` in 13-agent-sessions.md](13-agent-sessions.md).
 
 ### Sub-Agent Architectures
 
@@ -232,9 +232,9 @@ For a concrete implementation of this pattern across agent sessions, see
 - Achieves clear separation of concerns and enables parallel exploration.
 
 For child session mechanics and parallel session semantics, see
-[12-agent-sessions.md — Child Session Mechanics](12-agent-sessions.md).
+[13-agent-sessions.md — Child Session Mechanics](13-agent-sessions.md).
 
-See [Section 11: Agents & Subagents](11-agents-subagents.md) and
+See [Section 12: Agents & Subagents](12-agents-subagents.md) and
 [opencode-agent-patterns/](opencode-agent-patterns/) for orchestration patterns.
 
 ---
@@ -384,9 +384,9 @@ to learn how to debug and improve your prompts systematically.
   and how context is assembled
 - [Section 4: Prompt Techniques](04-prompt-techniques.md) — prompting best
   practices and production patterns
-- [Section 8: AGENTS.md](08-agents-md.md) — writing concise project context
-- [Section 11: Agents & Subagents](11-agents-subagents.md) — context-fresh
+- [Section 9: AGENTS.md](09-agents-md.md) — writing concise project context
+- [Section 12: Agents & Subagents](12-agents-subagents.md) — context-fresh
   subagent workflows
-- [12-agent-sessions.md](12-agent-sessions.md) — session lifecycle, compaction details,
+- [13-agent-sessions.md](13-agent-sessions.md) — session lifecycle, compaction details,
   WORKFLOW_STATE.md handoff, when to split sessions
-- [Section 13: MCP Servers](13-mcp-servers.md) — controlling MCP tool context cost
+- [Section 14: MCP Servers](14-mcp-servers.md) — controlling MCP tool context cost

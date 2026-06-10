@@ -1,4 +1,4 @@
-# Section 16: Security & Privacy
+# Section 17: Security & Privacy
 
 AI coding assistants send code and context to external LLM providers.
 Understanding what data leaves your machine, how to limit exposure, and how
@@ -397,10 +397,10 @@ using AI assistants effectively, securely, and as a team.
 
 ### Further Reading
 
-- [Section 13: MCP Servers](13-mcp-servers.md) for MCP security configuration
+- [Section 14: MCP Servers](14-mcp-servers.md) for MCP security configuration
 - [Section 6: Context](06-context.md) for controlling
   what enters the context window
-- [Section 8: AGENTS.md](08-agents-md.md) for project-level rules that
+- [Section 9: AGENTS.md](09-agents-md.md) for project-level rules that
   reinforce security conventions
-- [Section 15: Team Collaboration](15-team-collaboration.md) for team-wide
+- [Section 16: Team Collaboration](16-team-collaboration.md) for team-wide
   AI security practices

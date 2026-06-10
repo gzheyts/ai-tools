@@ -15,7 +15,7 @@ Understanding these internals lets you:
 |---------|-------|
 | [1. The Agent Loop](#1-the-agent-loop) | Perceive → reason → act cycle |
 | [2. Tools](#2-tools----how-the-llm-acts-on-the-world) | Built-in tools, execution sequence, parallel calls |
-| [3. MCP](#3-mcp----model-context-protocol) | Plug-in protocol for external tools (see Section 13) |
+| [3. MCP](#3-mcp----model-context-protocol) | Plug-in protocol for external tools (see Section 14) |
 | [4. RAG](#4-rag----retrieval-augmented-generation) | Embed → retrieve → inject pipeline |
 | [5. Context Engineering](#5-context-engineering) | Window anatomy, token budget, context rot |
 | [6. Prompt Engineering](#6-prompt-engineering----the-users-layer) | Where your prompt fits in the layered model |
@@ -237,8 +237,8 @@ use tools that are not registered. Here is what Cursor provides:
 | Write         | Create or overwrite a file                 | Writes file  |
 | Shell         | Execute a shell command                    | Arbitrary    |
 | ReadLints     | Read linter/compiler diagnostics           | None         |
-| Task          | Launch a subagent (see [Section 11](11-agents-subagents.md)) | Spawns agent |
-| CallMcpTool   | Call an MCP server tool (see Section 13)   | Varies       |
+| Task          | Launch a subagent (see [Section 12](12-agents-subagents.md)) | Spawns agent |
+| CallMcpTool   | Call an MCP server tool (see Section 14)   | Varies       |
 
 OpenCode has equivalent tools with different names but
 the same fundamental categories: **read**, **search**, **edit**, **execute**,
@@ -308,7 +308,7 @@ The critical insight: **tool descriptions are the primary routing mechanism**.
 The model matches the semantics of what it needs against the `description`
 field of every available tool. This is why well-written MCP tool descriptions
 are essential -- a poorly described tool will never be selected, even if it
-is the perfect tool for the job. More on this in [Section 13](13-mcp-servers.md).
+is the perfect tool for the job. More on this in [Section 14](14-mcp-servers.md).
 
 ### Parallel Tool Calls
 
@@ -355,11 +355,11 @@ servers, databases, issue trackers, Git history, and more.
 MCP tools appear in the model's tool list **exactly like built-in tools**
 (Read, Grep, Shell, etc.). The agent loop does not distinguish them; on each
 iteration the model picks the best-matching tool description. You can steer
-preferences in `AGENTS.md` (see [Section 8](08-agents-md.md)).
+preferences in `AGENTS.md` (see [Section 9](09-agents-md.md)).
 
 **Full coverage** — architecture, agent-loop integration, tool resolution
 heuristics, parallel calls, failure modes, configuration, and custom servers —
-is in [Section 13: MCP Servers](13-mcp-servers.md).
+is in [Section 14: MCP Servers](14-mcp-servers.md).
 
 ---
 
@@ -527,7 +527,7 @@ AGENTS.md sits near the top of the stack. It is:
 3. **Under your control** — unlike the IDE system prompt
 4. **Small but dense** — 500–2000 tokens of pure signal
 
-A well-written AGENTS.md ([Section 8](08-agents-md.md)) beats per-prompt
+A well-written AGENTS.md ([Section 9](09-agents-md.md)) beats per-prompt
 tweaks because those rules are seen on every iteration of every agent loop.
 
 ### Where to Go Deeper
@@ -535,8 +535,8 @@ tweaks because those rules are seen on every iteration of every agent loop.
 | Topic | Section |
 |-------|---------|
 | Context rot, token budget, task-type strategies | [Section 6: Context](06-context.md) |
-| Child sessions, compaction, WORKFLOW_STATE handoff | [Section 12: Agent Sessions](12-agent-sessions.md) |
-| Subagent orchestration and phase gates | [Section 11: Agents & Subagents](11-agents-subagents.md) |
+| Child sessions, compaction, WORKFLOW_STATE handoff | [Section 13: Agent Sessions](13-agent-sessions.md) |
+| Subagent orchestration and phase gates | [Section 12: Agents & Subagents](12-agents-subagents.md) |
 
 
 ---
@@ -608,7 +608,7 @@ says "generate tests following given/when/then," then your prompt only
 needs to say "generate tests for PersonService.create()" -- the layers
 above handle the conventions.
 
-This is why investing in AGENTS.md (Section 8) and skills (Section 9)
+This is why investing in AGENTS.md (Section 9) and skills (Section 10)
 pays off exponentially: every future prompt is shorter and more
 effective because the persistent context layers handle the boilerplate.
 
@@ -681,7 +681,7 @@ This diagram shows every concept from this section:
 2. **Context engineering** (section 5) assembles the full context window
 3. **The agent loop** (section 1) iterates through tool calls
 4. **Built-in tools** (section 2) read and edit files
-5. **MCP tools** ([Section 13](13-mcp-servers.md)) provide semantic code analysis
+5. **MCP tools** ([Section 14](14-mcp-servers.md)) provide semantic code analysis
 6. **Your prompt** (section 6) drives the entire flow
 
 ---
@@ -707,9 +707,9 @@ This diagram shows every concept from this section:
 - Anthropic: *Model Context Protocol Specification* -- MCP standard
 - Lewis et al.: *Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks* (2020) -- original RAG paper
 - Liu et al.: *Lost in the Middle: How Language Models Use Long Contexts* (2023) -- U-shaped attention and context rot
-- Section 8: [AGENTS.md](08-agents-md.md) -- writing the project context layer
-- Section 13: [MCP Servers](13-mcp-servers.md) -- architecture, tool resolution, configuration
-- Section 11: [Agents & Subagents](11-agents-subagents.md) -- orchestrating multiple agent loops
+- Section 9: [AGENTS.md](09-agents-md.md) -- writing the project context layer
+- Section 14: [MCP Servers](14-mcp-servers.md) -- architecture, tool resolution, configuration
+- Section 12: [Agents & Subagents](12-agents-subagents.md) -- orchestrating multiple agent loops
 - Section 3: [Prompting](03-prompting.md) -- CO-STAR and 26 principles
 - Section 4: [Prompt Techniques](04-prompt-techniques.md) -- zero-shot, few-shot, chain-of-thought
 - Section 5: [Thinking & Reasoning](05-llm-models.md) -- model selection and cost
@@ -811,7 +811,7 @@ It does not. Each conversation starts with a blank context window. The
 only persistence comes from files on disk — `AGENTS.md`, rules, and your
 source code. If the assistant seems to "remember" something, it is
 because it re-read a file or RAG re-retrieved the same chunk.
-See [12-agent-sessions.md](12-agent-sessions.md) for session types, lifecycle, and
+See [13-agent-sessions.md](13-agent-sessions.md) for session types, lifecycle, and
 cross-session handoff patterns.
 
 **"The AI reads my entire codebase."**

@@ -1,7 +1,7 @@
 # OpenCode Agent Patterns
 
-OpenCode-specific companion to [11-agents-subagents.md](../11-agents-subagents.md),
-[12-agent-sessions.md](../12-agent-sessions.md), and [06-context.md](../06-context.md).
+OpenCode-specific companion to [12-agents-subagents.md](../12-agents-subagents.md),
+[13-agent-sessions.md](../13-agent-sessions.md), and [06-context.md](../06-context.md).
 
 An **agentic workflow** is **you + a primary agent (Build or Plan) + subagents (General, Explore, Scout)** in **[OpenCode](https://opencode.ai)**.
 
@@ -242,7 +242,7 @@ These are **built-in defaults**. Override in project `opencode.json` or `.openco
 ### Why use subagents
 
 For the general rationale (focus, parallelism, context control, safety), see
-[11-agents-subagents.md](../11-agents-subagents.md).
+[12-agents-subagents.md](../12-agents-subagents.md).
 
 In OpenCode specifically: Explore is read-only, Scout reaches external sources, General
 can edit. Combining them in one orchestration message lets you run exploration + tests +
@@ -432,7 +432,7 @@ When the primary delegates:
 
 For session lifecycle, context growth mechanics, practical token cost reference, subagent
 isolation diagram, model window sizes, and session-splitting triggers, see
-[12-agent-sessions.md](../12-agent-sessions.md).
+[13-agent-sessions.md](../13-agent-sessions.md).
 
 **OpenCode summary:** Each step re-sends the full accumulated context. At 20 steps with
 large tool outputs, a typical Java triage session consumes 30 000–80 000 tokens. This is
@@ -571,8 +571,8 @@ Use this to inspect what Explore actually read, or what General proposed, withou
 
 For what subagents don't see, what flows back (Parent→Child / Child→Parent / Parent→You),
 and the `WORKFLOW_STATE.md` cross-session handoff pattern, see
-[12-agent-sessions.md](../12-agent-sessions.md) and
-[11-agents-subagents.md — Pass Context Explicitly](../11-agents-subagents.md).
+[13-agent-sessions.md](../13-agent-sessions.md) and
+[12-agents-subagents.md — Pass Context Explicitly](../12-agents-subagents.md).
 
 **OpenCode note:** `WORKFLOW_STATE.md` is a human convention — you create the file
 (or ask Build to create it) and paste its path into the task prompt.
@@ -1009,7 +1009,7 @@ A **context window** is the maximum number of tokens a single LLM call can accep
 **One-line rule:** Primary context grows with every tool call; subagent context stays bounded and only the final summary returns to primary.
 
 Full mechanics (filling rate, token cost table, model window sizes, session-splitting triggers):
-[12-agent-sessions.md](../12-agent-sessions.md). OpenCode-specific guardrails below.
+[13-agent-sessions.md](../13-agent-sessions.md). OpenCode-specific guardrails below.
 
 ---
 
@@ -1279,7 +1279,7 @@ steps: treat as final attempt before escalation to me.
 ## Orchestration Principles
 
 **See also:** [Agent Model](#agent-model), [Workflow Execution](#workflow-execution), [Token Efficiency](#token-efficiency-and-doom-loop-prevention); [tools/opencode-reference.md](tools/opencode-reference.md) (skim)  
-**General concepts:** phase gates, verify gates — [11-agents-subagents.md](../11-agents-subagents.md)
+**General concepts:** phase gates, verify gates — [12-agents-subagents.md](../12-agents-subagents.md)
 
 ---
 
@@ -1990,7 +1990,7 @@ Install `/triage` first; full orchestration reuses patterns from [templates/](te
 
 For the general failure patterns (parallel writers, doom loop, scope creep, verify skip,
 stop conditions, and recovery prompts), see
-[11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md).
+[12-agents-subagents.md — Failure Patterns](../12-agents-subagents.md).
 
 This section covers **OpenCode-specific** anti-patterns and recovery actions.
 
@@ -2037,7 +2037,7 @@ You never Tabbed to Build or approved the diff.
 
 ### Other patterns (brief)
 
-For general failure patterns, see [11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md).
+For general failure patterns, see [12-agents-subagents.md — Failure Patterns](../12-agents-subagents.md).
 OpenCode-specific recovery actions:
 
 | Symptom | OpenCode action |
@@ -2051,7 +2051,7 @@ OpenCode-specific recovery actions:
 
 ### Stop conditions (take control)
 
-For general stop conditions, see [11-agents-subagents.md — Stop conditions](../11-agents-subagents.md).
+For general stop conditions, see [12-agents-subagents.md — Stop conditions](../12-agents-subagents.md).
 
 OpenCode-specific: use `/undo` to revert agent edits; set `edit: deny` in `opencode.json` to enforce read-only mode.
 
@@ -2077,7 +2077,7 @@ Also review the agent summary for "renamed", "changed return type", or "removed 
 
 ### Recovery playbook
 
-See [11-agents-subagents.md — Failure Patterns](../11-agents-subagents.md) for the
+See [12-agents-subagents.md — Failure Patterns](../12-agents-subagents.md) for the
 general recovery prompt template (stop / summarize / redirect).
 
 **OpenCode-specific recovery:**

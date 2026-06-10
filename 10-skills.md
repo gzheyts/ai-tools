@@ -1,4 +1,4 @@
-# Section 9: SKILL.md -- Building Reusable AI Capabilities
+# Section 11: SKILL.md -- Building Reusable AI Capabilities
 
 Skills are modular, reusable instruction packages that AI assistants load
 **on demand** -- only when the task matches the skill's description.
@@ -515,5 +515,5 @@ iterations before they stabilize.
 
 ## Next Section
 
-Proceed to [Section 10: Custom Commands](10-custom-commands.md) to learn
+Proceed to [Section 11: Custom Commands](11-custom-commands.md) to learn
 how to create `/slash` commands.

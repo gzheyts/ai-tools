@@ -1,4 +1,4 @@
-# Section 8: AGENTS.md -- The Project Brain
+# Section 10: AGENTS.md -- The Project Brain
 
 `AGENTS.md` is a markdown file placed at the root of your repository that
 provides every AI coding agent with essential project context. It is loaded
@@ -75,7 +75,7 @@ A production-quality `AGENTS.md` has these sections. Full copy-paste template:
 | **Common Patterns** | Error handling, Optional usage, logging conventions |
 | **Database / CI / K8s** (optional) | Schema conventions, pipeline notes, deployment rules |
 
-Keep the file dense. Move detailed recipes into [Skills](09-skills.md) instead
+Keep the file dense. Move detailed recipes into [Skills](10-skills.md) instead
 of bloating AGENTS.md. AGENTS.md is always-on context -- every line loads on
 every interaction, so treat it as a token budget, not a wiki. See
 [Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency)
@@ -268,7 +268,7 @@ An `AGENTS.md` that exceeds 200 lines wastes context tokens on every
 interaction. The model reads the entire file for every prompt, so every
 unnecessary line costs money and dilutes attention. Extract reusable,
 detailed patterns into Skills instead (see
-[Section 9: Skills](09-skills.md)). For the full token budgeting strategy
+[Section 10: Skills](10-skills.md)). For the full token budgeting strategy
 -- including when to use subdirectory AGENTS.md vs. skills vs. commands --
 see [Section 7: Token Efficiency](07-prompt-optimization.md#46-token-efficiency).
 
@@ -303,5 +303,5 @@ apply to **this** project?" Remove anything that does not.
 
 ## Next Section
 
-Proceed to [Section 9: Skills](09-skills.md) to learn how to build
+Proceed to [Section 10: Skills](10-skills.md) to learn how to build
 reusable, modular capabilities.

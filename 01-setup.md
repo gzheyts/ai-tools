@@ -106,7 +106,7 @@ your-project/
 └── AGENTS.md    <-- loaded by Cursor, OpenCode
 ```
 
-You will learn to write this file in **Section 8**.
+You will learn to write this file in **Section 9**.
 
 ## 4. Verifying Your Setup
 
@@ -159,7 +159,7 @@ Run this checklist before proceeding:
 
 **1. Not creating the config directory before starting work.**
 The assistant does not create `.cursor/` or `.opencode/` for you.
-If the directory is missing, rules, commands, and 09-skills.md have nowhere to live and the
+If the directory is missing, rules, commands, and 10-skills.md have nowhere to live and the
 assistant operates with zero project-specific context. Always run `mkdir -p` as the
 very first step after cloning a repository.
 

@@ -1,4 +1,4 @@
-# Section 15: Team Collaboration
+# Section 17: Team Collaboration
 
 Individual AI assistant setups get you started. Team-wide AI practices
 multiply the benefit. This section covers how to share AI configurations,
@@ -160,7 +160,7 @@ Beyond the template checklist:
 3. **First PR expectation:** new developers should use `/review` on their own
    diff before requesting human review (Section 4 below).
 4. **Subagent intro (optional):** after the first week, point them to
-   [Section 11: Agents & Subagents](11-agents-subagents.md) for multi-step
+   [Section 12: Agents & Subagents](12-agents-subagents.md) for multi-step
    workflows — not on Day 1.
 
 Customize the template per project: update the skills/commands table to match
@@ -250,12 +250,12 @@ Add these to your sprint retrospective:
 
 ## Next Section
 
-Proceed to [Section 16: Security & Privacy](16-security-and-privacy.md)
+Proceed to [Section 17: Security & Privacy](17-security-and-privacy.md)
 to learn how to use AI assistants safely with sensitive codebases.
 
 ### Further Reading
 
-- [Section 8: AGENTS.md](08-agents-md.md) for writing project context
-- [Section 9: Skills](09-skills.md) for building reusable skills
+- [Section 9: AGENTS.md](09-agents-md.md) for writing project context
+- [Section 10: Skills](10-skills.md) for building reusable skills
 - [Section 3: Prompt Management](03-prompting.md#multi-project-prompt-management) for multi-project
   prompt storage

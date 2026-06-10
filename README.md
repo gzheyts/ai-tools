@@ -62,7 +62,7 @@ Start at [opencode-agent-patterns/README.md](opencode-agent-patterns/README.md) 
 
 Practice on [`templates/sample-project/`](templates/sample-project/) — includes an intentional failing test for triage exercises.
 
-Complements [11-agents-subagents.md](11-agents-subagents.md) (assistant-agnostic concepts) with OpenCode-specific workflows.
+Complements [12-agents-subagents.md](12-agents-subagents.md) (assistant-agnostic concepts) with OpenCode-specific workflows.
 
 ---
 
@@ -82,24 +82,25 @@ Complements [11-agents-subagents.md](11-agents-subagents.md) (assistant-agnostic
 | 05 | [05-llm-models.md](05-llm-models.md) | LLM thinking & model selection |
 | 06 | [06-context.md](06-context.md) | Context strategies & engineering |
 | 07 | [07-prompt-optimization.md](07-prompt-optimization.md) | Prompt optimization |
+| 08 | [08-prompt-examples.md](08-prompt-examples.md) | Copy-paste Java/Spring prompt examples |
 
 ### Configuration
 | # | File | Topic |
 |---|------|-------|
-| 08 | [08-agents-md.md](08-agents-md.md) | AGENTS.md |
-| 09 | [09-skills.md](09-skills.md) | Skills |
-| 10 | [10-custom-commands.md](10-custom-commands.md) | Custom commands |
-| 11 | [11-agents-subagents.md](11-agents-subagents.md) | Agents & subagents — see also [opencode-agent-patterns/README.md](opencode-agent-patterns/README.md) |
-| 12 | [12-agent-sessions.md](12-agent-sessions.md) | Agent sessions — lifecycle, child sessions, compaction, cross-session handoff |
-| 13 | [13-mcp-servers.md](13-mcp-servers.md) | MCP architecture, tool resolution, configuration |
+| 09 | [09-agents-md.md](09-agents-md.md) | AGENTS.md |
+| 10 | [10-skills.md](10-skills.md) | Skills |
+| 11 | [11-custom-commands.md](11-custom-commands.md) | Custom commands |
+| 12 | [12-agents-subagents.md](12-agents-subagents.md) | Agents & subagents — see also [opencode-agent-patterns/README.md](opencode-agent-patterns/README.md) |
+| 13 | [13-agent-sessions.md](13-agent-sessions.md) | Agent sessions — lifecycle, child sessions, compaction, cross-session handoff |
+| 14 | [14-mcp-servers.md](14-mcp-servers.md) | MCP architecture, tool resolution, configuration |
 
 ### Java & DevOps
 | # | File | Topic |
 |---|------|-------|
-| 14 | [14-java-production-stack.md](14-java-production-stack.md) | Java / Spring Boot, database & DevOps |
+| 15 | [15-java-production-stack.md](15-java-production-stack.md) | Java / Spring Boot, database & DevOps |
 
 ### Advanced
 | # | File | Topic |
 |---|------|-------|
-| 15 | [15-team-collaboration.md](15-team-collaboration.md) | Team collaboration |
-| 16 | [16-security-and-privacy.md](16-security-and-privacy.md) | Security & privacy |
+| 16 | [16-team-collaboration.md](16-team-collaboration.md) | Team collaboration |
+| 17 | [17-security-and-privacy.md](17-security-and-privacy.md) | Security & privacy |

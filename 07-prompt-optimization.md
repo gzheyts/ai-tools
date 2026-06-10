@@ -24,6 +24,7 @@ unwieldy. Everything applies to AGENTS.md, skills, and custom commands.
 | [10. Systematic Debugging Checklist](#10-systematic-prompt-debugging-checklist) | Step-by-step debug guide |
 | [11. Golden Test Set](#11-golden-test-set-best-practices) | Building and maintaining |
 | [12. Failure → Fix Reference](#12-quick-reference-failure-type--debug-strategy--fix) | Quick-reference table |
+| [Examples](08-prompt-examples.md) | Copy-paste failure/reproduction prompts (Section 8) |
 
 ---
 
@@ -77,13 +78,6 @@ no pagination -- things you clearly need.
 not tell the model which methods, which query style, or which return types.
 
 **Fix:** Add explicit requirements (Section 2, Principle 5):
-```
-Create PersonRepository extending CrudRepository<Person, Long>.
-Include these custom query methods:
-- findByLastNameIgnoreCase(String lastName) returning List<Person>
-- findByEmailContaining(String fragment, Pageable pageable) returning Page<Person>
-Use @Query with named parameters for the second method.
-```
 
 ### 2.2 Ignored Instructions
 
@@ -102,15 +96,6 @@ generated code uses JPA annotations (`@Entity`, `@Column`).
 
 **Fix:** Bookend the constraint -- place it near the top AND near the
 bottom of the relevant section. Use MUST/NEVER language:
-```markdown
-## Data Access
-MUST use Spring Data JDBC (NOT JPA) for all repositories.
-...
-(other data access rules)
-...
-NEVER use javax.persistence or jakarta.persistence annotations.
-Spring Data JDBC is the ONLY persistence framework for this project.
-```
 
 ### 2.3 Inconsistent Behavior
 
@@ -123,16 +108,6 @@ table, sometimes a bullet list, sometimes inline comments.
 feels natural for the specific input, and that varies.
 
 **Fix:** Add a few-shot example (Section 3) or an output primer:
-```markdown
-Present every finding in this exact format:
-
-### Finding 1
-- **Severity:** Critical | Warning | Info
-- **File:** `{filename}`
-- **Line:** {line number}
-- **Issue:** {one-sentence description}
-- **Fix:** {code suggestion}
-```
 
 ### 2.4 Scope Creep
 
@@ -146,15 +121,6 @@ response DTO, and restructures the test.
 NOT do. LLMs are eager to be helpful and will extend scope by default.
 
 **Fix:** Add explicit boundaries:
-```
-Add @Valid to the controller method parameter and Jakarta Bean
-Validation annotations to the CreatePersonRequest record.
-
-Do NOT:
-- Change any other file
-- Modify the service layer
-- Add exception handling (that is a separate task)
-```
 
 ### 2.5 Context Rot
 
@@ -448,7 +414,7 @@ reasoning tokens to every response. Use it temporarily for debugging
 **The AGENTS.md budget.** Treat AGENTS.md as a fixed per-request tax.
 Target under 150 lines for cross-cutting rules only. Everything else belongs
 in skills. Subdirectory AGENTS.md files add more tax when working in that
-directory. See [Section 8: AGENTS.md](08-agents-md.md).
+directory. See [Section 9: AGENTS.md](09-agents-md.md).
 
 **Skills as lazy-loading units.** Skills load in two stages:
 
@@ -458,7 +424,7 @@ directory. See [Section 8: AGENTS.md](08-agents-md.md).
 This is lazy loading in practice: the agent sees what skills exist without
 paying for instructions it does not need. Design descriptions as precise
 trigger keywords. See [agentskills.io](https://agentskills.io/specification)
-and [Section 9: Skills](09-skills.md).
+and [Section 10: Skills](10-skills.md).
 
 **Commands as user-triggered bursts.** Custom commands load only when you
 type `/name` -- zero cost until invoked. Prefer commands for workflows you
@@ -498,12 +464,12 @@ tool results, failed attempts, and digressions. Start a new chat when:
 
 For structured handoff between sessions, write state to a file
 (`WORKFLOW_STATE.md`) rather than pasting full history. See
-[Section 12: Agent Sessions](12-agent-sessions.md).
+[Section 13: Agent Sessions](13-agent-sessions.md).
 
 **Subagent summaries, not subagent dumps.** When spawning subagents, instruct
 them to return a condensed summary (findings, file paths, next steps) -- not
 full transcripts. The lead agent needs conclusions, not the subagent's entire
-reasoning chain. See [Section 11: Agents & Subagents](11-agents-subagents.md).
+reasoning chain. See [Section 12: Agents & Subagents](12-agents-subagents.md).
 
 **Compaction and note-taking.** Summarize conversation history when sessions
 run long; persist key decisions in external files. See
@@ -802,7 +768,7 @@ Start your response with:
 ```
 
 **Enforce procedural behavior with numbered steps.** Unlike free-form
-09-skills.md, commands often need a specific sequence:
+10-skills.md, commands often need a specific sequence:
 
 ```markdown
 # /migration command
@@ -843,92 +809,7 @@ improve structure without changing behavior.
 
 ### Refactoring Patterns
 
-**Split monolith.** Extract a bloated AGENTS.md section into a dedicated
-skill. The section becomes a one-line pointer:
-
-Before:
-```markdown
-## Testing (45 lines)
-All tests MUST follow BDD structure with given/when/then.
-Use @WebMvcTest for controller tests...
-Use @MockitoBean for service dependencies...
-Name tests using methodName_stateUnderTest_ExpectedBehavior...
-(40 more lines of testing rules)
-```
-
-After:
-```markdown
-## Testing
-Follow the conventions in the `generate-tests` skill.
-```
-
-And `skills/generate-tests/SKILL.md` contains the full 45 lines with
-proper structure, examples, and output format.
-
-**Rename for clarity.** Replace vague instructions with precise
-behavioral contracts:
-
-| Before                          | After                                                      |
-|---------------------------------|------------------------------------------------------------|
-| Write good tests                | Generate one @Test method per public method in the service  |
-| Follow best practices           | Use @Transactional on write operations; validate in service |
-| Handle errors properly          | Throw EntityNotFoundException from service; return ProblemDetail from controller |
-
-**Extract few-shot anchors.** Move inline examples from the skill body
-into `references/` files. This makes the examples reusable across
-multiple skills and easier to update when project conventions change:
-
-Before (everything in `SKILL.md`):
-```markdown
-## Example
-```java
-@Test
-void createPerson_validInput_returnsPerson() {
-    // 20 lines of test code inline in the skill
-}
-```​
-```
-
-After:
-```markdown
-## Example
-Follow the test pattern in references/service-test-example.java
-```
-
-**Merge duplicates.** When the same rule appears in both the root
-AGENTS.md and a subdirectory AGENTS.md, consolidate. Pick one canonical
-location and delete the duplicate. A common pattern:
-
-- Cross-cutting rules (style, Java version) → root AGENTS.md
-- Domain-specific rules (entity conventions, query patterns) → the
-  relevant subdirectory AGENTS.md
-
-### Worked Example
-
-**Problem:** A 50-line "Code Review" section in AGENTS.md causes issues.
-The section mixes review process instructions with severity definitions
-and output format. Changes to the output format break the severity
-categories.
-
-**Refactoring steps:**
-
-1. Copy the 50-line section into `skills/code-review/SKILL.md`
-2. Structure the skill with clear subsections:
-   - Role assignment
-   - Review categories (architecture, style, security, tests)
-   - Severity definitions with examples
-   - Output format template
-3. Replace the AGENTS.md section with:
-   ```markdown
-   ## Code Review
-   Use the `code-review` skill for all code reviews.
-   ```
-4. Run the golden test set against the old and new configuration
-5. Verify identical behavior, then commit both changes together
-
-The result: severity definitions can now be changed without affecting
-the output format, the skill can be tested in isolation, and AGENTS.md
-is 48 lines shorter.
+Split monolith, rename for clarity, extract few-shot anchors, merge duplicates — see theory above. Full before/after and worked walkthrough: [08-prompt-examples.md § Refactoring](08-prompt-examples.md#refactoring-examples)
 
 ---
 
@@ -941,7 +822,7 @@ is 48 lines shorter.
 | Keep a golden test set             | Provides a repeatable baseline for measuring improvement    |
 | Commit prompt versions to Git      | Creates an audit trail; enables rollback                    |
 | Use CoT/thinking to understand failures | Reveals the model's interpretation of your instructions |
-| Prefer modular 09-skills.md over monolithic AGENTS.md | Easier to test, debug, and maintain independently   |
+| Prefer modular 10-skills.md over monolithic AGENTS.md | Easier to test, debug, and maintain independently   |
 | Document why a rule exists         | Prevents accidental removal during future cleanup           |
 | Audit AGENTS.md periodically       | Catches context rot before it degrades output quality       |
 | Test prompts in isolation first    | Confirms the prompt works without relying on surrounding context |
@@ -1045,31 +926,8 @@ showing multi-dependency mocking.
 
 ### Concrete Golden Test Entry: `code-review` Skill
 
-```markdown
-# test-prompts/code-review/03-injection-vulnerability.md
+Full fixture: [08-prompt-examples.md § Golden test](08-prompt-examples.md#golden-test-code-review)
 
-## Input
-
-File: `PersonController.java`
-```java
-@GetMapping("/search")
-public List<Person> search(@RequestParam String query) {
-    return jdbcTemplate.query(
-        "SELECT * FROM person WHERE name = '" + query + "'",
-        personRowMapper
-    );
-}
-```​
-
-## Expected Behavior
-
-- [ ] Identifies SQL injection vulnerability
-- [ ] Severity: Critical (not Warning, not Info)
-- [ ] Recommends parameterized query or named parameters
-- [ ] Does NOT suggest switching to JPA (project uses Spring Data JDBC)
-- [ ] Output follows the structured format (Finding N, Severity, File, Line, Issue, Fix)
-- [ ] No false positives for this simple input
-```
 
 ### Maintaining the Test Set
 
@@ -1099,7 +957,7 @@ public List<Person> search(@RequestParam String query) {
 
 ## Next Section
 
-Proceed to [Section 8: AGENTS.md](08-agents-md.md) to write your first
+Proceed to [Section 9: AGENTS.md](09-agents-md.md) to write your first
 project context file that shapes every AI interaction.
 
 Or revisit earlier sections:

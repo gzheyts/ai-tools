@@ -1,4 +1,4 @@
-# Section 14: Java Production Stack — Spring Boot, Database & DevOps
+# Section 16: Java Production Stack — Spring Boot, Database & DevOps
 
 Teach AI assistants your **Java 21 / Spring Boot 3.5** patterns, **PostgreSQL /
 Oracle / Liquibase** conventions, and **GitLab CI / Kubernetes** infrastructure —
@@ -1680,13 +1680,13 @@ Once root cause is identified, ask the AI to generate the fix:
 
 ## Next Section
 
-Proceed to [Section 15: Team Collaboration](15-team-collaboration.md) to learn
+Proceed to [Section 16: Team Collaboration](16-team-collaboration.md) to learn
 how to share AI configurations and onboard developers as a team.
 
 ### Further Reading
 
-- [Section 8: AGENTS.md](08-agents-md.md) — project context for all three parts
-- [Section 9: Skills](09-skills.md) — `db-migration`, `ci-fix`, `k8s-debug` skills
-- [Section 10: Custom Commands](10-custom-commands.md) — `/migration`, `/k8s-debug`
+- [Section 9: AGENTS.md](09-agents-md.md) — project context for all three parts
+- [Section 10: Skills](10-skills.md) — `db-migration`, `ci-fix`, `k8s-debug` skills
+- [Section 11: Custom Commands](11-custom-commands.md) — `/migration`, `/k8s-debug`
 - [Section 6: Context](06-context.md) — token budget for large schema/CI prompts
 - [templates/sample-project/](templates/sample-project/) — reference implementation

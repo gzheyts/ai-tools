@@ -1,4 +1,4 @@
-# Section 13: MCP Servers
+# Section 15: MCP Servers
 
 MCP (Model Context Protocol) is an open standard (created by Anthropic,
 adopted across the industry) for connecting **external capabilities** to
@@ -265,7 +265,7 @@ This produces lower-quality results than a purpose-built tool.
 2. **Limit connected MCP servers** to those you actually use. Disconnect
    servers you are not actively working with.
 3. **Use AGENTS.md to guide tool preference** — see below and
-   [Section 8: AGENTS.md](08-agents-md.md).
+   [Section 9: AGENTS.md](09-agents-md.md).
 
 ### Guiding Tool Selection via AGENTS.md
 
@@ -534,7 +534,7 @@ mcp.run()
 
 ## Next Section
 
-Proceed to [Section 14: Java Production Stack](14-java-production-stack.md)
+Proceed to [Section 15: Java Production Stack](15-java-production-stack.md)
 to apply AI assistants to Java 21, Spring Boot, database, and DevOps workflows.
 
 ### Further Reading
@@ -542,4 +542,4 @@ to apply AI assistants to Java 21, Spring Boot, database, and DevOps workflows.
 - [MCP Specification](https://spec.modelcontextprotocol.io/)
 - [MCP Server Registry](https://github.com/modelcontextprotocol/servers)
 - [Section 2: How AI Assistants Work](02-how-ai-assistants-work.md) for the agent loop and built-in tools
-- [Section 8: AGENTS.md](08-agents-md.md) for project context that complements MCP
+- [Section 9: AGENTS.md](09-agents-md.md) for project context that complements MCP

@@ -16,7 +16,7 @@ storage layers, sharing, versioning, and Linux tooling.
 | [CO-STAR Framework](#the-co-star-framework) | Structured six-element prompt design |
 | [26 Principles](#the-26-principles-of-effective-prompting) | Research-backed prompting rules |
 | [Applying to Config Files](#applying-prompting-techniques-to-assistant-configuration) | AGENTS.md, SKILL.md, custom commands |
-| [Practical Examples](#practical-examples-each-principle-applied) | 14 principles applied to Java |
+| [Examples](08-prompt-examples.md) | Copy-paste prompts (Section 8) |
 | [Anti-Patterns](#prompting-anti-patterns-for-java-developers) | Common mistakes and fixes |
 | [Multi-Project Prompt Management](#multi-project-prompt-management) | Storage layers, Git, Stow, chezmoi, versioning |
 
@@ -55,8 +55,8 @@ Every prompt has four building blocks:
 - **Context** -- Domain information, constraints, prior decisions.
 - **Format** -- The structure and style of the expected output.
 
-These map directly onto AGENTS.md sections (Section 8), SKILL.md bodies
-(Section 9), and custom commands (Section 10). When you write a skill
+These map directly onto AGENTS.md sections (Section 11), SKILL.md bodies
+(Section 10), and custom commands (Section 11). When you write a skill
 instruction like "Review this code for SOLID violations and present
 findings grouped by severity," you are applying this anatomy.
 
@@ -78,38 +78,8 @@ before sending any prompt.
 | **A**  | Audience  | Who will read or use this output?                   |
 | **R**  | Response  | What format should the output take?                 |
 
-### CO-STAR in Practice: Java Examples
 
-**Bad prompt (no structure):**
-```
-Create a person endpoint.
-```
-
-**CO-STAR prompt:**
-```
-Context: Spring Boot 3.5 project using Java 21, Spring Data JDBC,
-PostgreSQL. Package: com.example.myservice.
-
-Objective: Create a REST endpoint for creating a new Person entity.
-
-Style: Follow layered architecture -- Controller delegates to Service,
-Service uses Repository. Use Java records for DTOs. Apply @Valid on
-request bodies.
-
-Tone: Production-quality code, no TODOs or placeholders.
-
-Audience: Senior Java developers reviewing a merge request.
-
-Response: Produce these files in order:
-1. CreatePersonRequest.java (record with validation)
-2. PersonResponse.java (record)
-3. PersonService.java (interface)
-4. PersonServiceImpl.java
-5. PersonController.java (with OpenAPI annotations)
-```
-
-The second prompt is longer, but it produces correct output on the first
-attempt. The extra 30 seconds of writing saves 20 minutes of fixing.
+**Examples:** [CO-STAR Java prompts](08-prompt-examples.md#co-star-java)
 
 ---
 
@@ -124,20 +94,19 @@ in the original research, with coding-specific examples for each.
 These principles control how the model interprets the structure of
 your request.
 
+
+Full before/after pairs for each principle: [08-prompt-examples.md § 26 Principles](08-prompt-examples.md#principles-inline)
+
+### Category 1: Prompt Structure and Clarity
+
+These principles control how the model interprets the structure of
+your request.
+
 **Principle: Integrate the intended audience**
 
 Tell the model who will read the output. This changes vocabulary,
 detail level, and assumptions.
 
-```
-# Without audience
-Explain what @Transactional does.
-
-# With audience
-Explain what @Transactional does. The audience is a mid-level
-Java developer who has used JDBC but never Spring's transaction
-management.
-```
 
 **Principle: Use affirmative directives**
 
@@ -145,38 +114,16 @@ State what the model should do, not what it should avoid. Negative
 instructions ("don't use Lombok") are processed less reliably than
 positive ones ("use manual constructors and getters").
 
-```
-# Negative (less reliable)
-Don't use raw types. Don't put business logic in controllers.
-Don't return entities from endpoints.
-
-# Affirmative (more reliable)
-Use parameterized types for all collections.
-Place business logic in @Service classes only.
-Return DTO records from all REST endpoints.
-```
 
 This is directly applicable to `AGENTS.md` -- write your architecture
 rules as affirmative "do this" statements rather than "don't do that"
-prohibitions (see Section 8).
+prohibitions (see Section 10).
 
 **Principle: Use delimiters**
 
 Separate sections of your prompt with visual markers so the model
 knows where instructions end and data begins.
 
-```
-###Instruction###
-Review the following Java class for SOLID violations.
-
-###Code###
-public class PersonServiceImpl implements PersonService {
-    // ...
-}
-
-###Output Format###
-List each violation with: principle violated, line number, suggested fix.
-```
 
 **Principle: Use leading words ("think step by step")**
 
@@ -184,49 +131,15 @@ Chain-of-thought prompting forces the model to reason before answering.
 This is especially effective for complex logic, debugging, and
 architectural decisions.
 
-```
-# Without CoT
-What is wrong with this SQL query?
-
-# With CoT
-Analyze this SQL query step by step:
-1. Check the JOIN conditions for correctness
-2. Verify the WHERE clause logic
-3. Look for N+1 or missing index patterns
-4. Assess the SELECT for unnecessary columns
-Then summarize the issues found.
-```
 
 **Principle: Use output primers**
 
 End your prompt with the beginning of the expected output. This anchors
 the model's response format.
-
-```
-Generate a Liquibase changelog for adding an email column to the
-person table.
-
-```xml
+xml
 <?xml version="1.0" encoding="UTF-8"?>
 <databaseChangeLog
     xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
-```
-
-The model will continue in the established format rather than inventing
-its own structure.
-
-### Category 2: Specificity and Information
-
-These principles ensure the model has enough detail to produce
-accurate output.
-
-**Principle: Use few-shot prompting (example-driven)**
-
-Provide 1-3 examples of the desired input-output pair before giving
-the actual task. This is the single most effective technique for
-consistent output.
-
-```
 Convert the following method names to test names.
 
 Example 1:
@@ -244,17 +157,6 @@ Example 3:
 Now convert:
   Method: updatePerson
   Method: deletePerson
-```
-
-Few-shot examples are especially powerful inside SKILL.md files
-(see Section 9) -- they show the AI exactly what output format you expect.
-
-**Principle: State explicit requirements**
-
-Use direct phrasing like "Your task is" and "You MUST" to make
-requirements unambiguous.
-
-```
 Your task is to generate a MapStruct mapper for the Person entity.
 
 You MUST:
@@ -262,63 +164,16 @@ You MUST:
 - Map all fields explicitly (no implicit mapping)
 - Handle null source objects gracefully
 - Include an inverse mapping method
-```
-
-**Principle: Ask for detailed output when needed**
-
-If you need comprehensive output, say so explicitly.
-
-```
 Write a detailed analysis of the PersonService class including
 all methods, their transaction boundaries, potential thread-safety
 issues, and suggestions for improvement. Add all necessary details.
-```
-
-### Category 3: User Interaction and Engagement
-
-These principles leverage the conversational nature of LLMs.
-
-**Principle: Let the model ask questions first**
-
-For complex tasks, allow the model to clarify requirements before
-producing code. This prevents wasted iterations.
-
-```
 I need to add a new feature to the Person service. Before writing
 any code, ask me questions about the requirements until you have
 enough information to implement it correctly. Ask about: the use
 case, validation rules, error handling, and testing expectations.
-```
-
-This is particularly useful for open-ended tasks like "add search
-functionality" or "implement export feature" where the AI needs
-domain context it cannot infer.
-
-### Category 4: Content and Language Style
-
-These principles shape how the model communicates.
-
-**Principle: Assign a role**
-
-Telling the model to adopt a specific persona changes the expertise
-and vocabulary applied to the response.
-
-```
 You are a senior Java backend engineer specializing in Spring Boot
 and distributed systems. You write production-grade code following
 Clean Code principles and always consider thread safety.
-```
-
-In AGENTS.md, this translates to the Project Overview section that
-establishes the project's technology context. In SKILL.md, it
-becomes the opening instruction that frames the skill's behavior.
-
-**Principle: Be direct -- skip pleasantries**
-
-Polite filler ("Could you please...", "If you don't mind...")
-wastes tokens without improving output quality. Be direct.
-
-```
 # Wastes tokens
 Could you please help me write a service method that creates a
 person? If it's not too much trouble, please also add validation.
@@ -330,31 +185,10 @@ Write a PersonService.create() method that:
 2. Maps DTO to entity
 3. Saves via repository
 4. Returns the response DTO
-```
-
-**Principle: Repeat critical constraints**
-
-When a rule is critical, repeat it. The model weights repeated
-information higher.
-
-```
 Generate a REST controller for Person CRUD operations.
 Use Java records for all DTOs.
 Each endpoint MUST return a DTO record, never an entity.
 The response type is always a record.
-```
-
-### Category 5: Complex Tasks and Coding
-
-These principles handle multi-step and programming-specific tasks.
-
-**Principle: Break complex tasks into sequential subtasks**
-
-Instead of asking for an entire feature at once, decompose it into
-a chain of focused prompts. Each prompt builds on the previous
-output.
-
-```
 Step 1: "Design the database schema for an Order entity with
          line items. Show the Liquibase changelog."
 
@@ -369,17 +203,6 @@ Step 4: "Create the Service layer with create, update, and
 
 Step 5: "Finally, create the RestController with OpenAPI
          annotations. Use the DTOs from step 2."
-```
-
-This approach produces better results than a single "create the
-entire Order feature" prompt because each step has focused context.
-
-**Principle: Combine Chain-of-Thought with few-shot**
-
-For reasoning-heavy tasks (debugging, optimization, architecture
-decisions), combine step-by-step reasoning with examples.
-
-```
 Analyze the following Spring Boot endpoint for performance issues.
 Think through each layer step by step.
 
@@ -395,14 +218,6 @@ public ResponseEntity<PersonResponse> create(@RequestBody CreatePersonRequest re
     log.info("Request body: {}", request);
     // ...
 }
-```
-
-**Principle: Multi-file generation pattern**
-
-When the task spans multiple files, instruct the model to produce
-them in dependency order with clear file boundaries.
-
-```
 Generate the following files for a new Order feature. Produce them
 in this exact order, with each file clearly marked:
 
@@ -417,7 +232,6 @@ in this exact order, with each file clearly marked:
 
 For each file, start with the full package declaration and imports.
 ```
-
 ---
 
 ## Applying Prompting Techniques to Assistant Configuration
@@ -425,20 +239,20 @@ For each file, start with the full package declaration and imports.
 The techniques above are not just for chat -- they directly improve the
 quality of your `AGENTS.md`, skills, and commands.
 
-### In AGENTS.md (Section 8)
+### In AGENTS.md (Section 10)
 - **Audience**: State the target persona ("This project is developed by
   senior Java engineers...")
 - **Affirmative directives**: Write rules as "do X" not "don't do Y"
 - **Delimiters**: Use clear markdown sections with headers
 - **Explicit requirements**: Use "MUST" and "NEVER" for hard rules
 
-### In SKILL.md (Section 9)
+### In SKILL.md (Section 11)
 - **Few-shot examples**: Include 1-2 input/output examples in the body
 - **Role assignment**: Open with "You are a ... specialist"
 - **Output format**: Specify the exact response structure
 - **Explicit requirements**: Use "Your task is" and "You MUST"
 
-### In Custom Commands (Section 10)
+### In Custom Commands (Section 12)
 - **Chain-of-thought**: Add "think step by step" for review/analysis commands
 - **Output primers**: End command instructions with the start of the
   expected output
@@ -447,377 +261,8 @@ quality of your `AGENTS.md`, skills, and commands.
 
 ---
 
-## Practical Examples: Each Principle Applied
 
-This section provides a full-context, realistic example for every
-principle discussed above. Each example shows a concrete Java/Spring
-scenario so you can copy and adapt the pattern.
-
-### 1. Audience (Principle 2)
-
-**Scenario:** You want the AI to explain a Spring Data JDBC mapping.
-
-```
-Without audience:
-  "Explain AggregateReference in Spring Data JDBC."
-
-With audience (junior developer):
-  "Explain AggregateReference in Spring Data JDBC.
-   The audience is a junior Java developer who understands JPA
-   @ManyToOne but has never used Spring Data JDBC."
-
-With audience (architect):
-  "Explain AggregateReference in Spring Data JDBC.
-   The audience is a software architect evaluating whether to
-   migrate from JPA to Spring Data JDBC for a high-throughput
-   service handling 10K requests/sec."
-```
-
-The junior version will get a step-by-step explanation with code
-samples. The architect version will get a trade-off analysis with
-performance implications.
-
-### 2. Affirmative Directives (Principle 4)
-
-**Scenario:** Writing architecture rules in AGENTS.md.
-
-```markdown
-# Negative version (less reliable)
-## Architecture Rules
-- Controllers CANNOT inject Repositories
-- Don't use wildcard imports
-- Do NOT return entities from REST endpoints
-- Never put @Transactional on controllers
-- Avoid using Optional.get() without isPresent()
-
-# Affirmative version (more reliable)
-## Architecture Rules
-- Controllers inject Service interfaces only
-- Use explicit imports for every class
-- Return DTO records from all REST endpoints
-- Place @Transactional on Service implementation methods only
-- Use Optional.orElseThrow() with a descriptive exception
-```
-
-### 3. Delimiters (Principle 17)
-
-**Scenario:** Asking the AI to refactor a service method.
-
-```
-###Instruction###
-Refactor the following method to use Java 21 pattern matching
-and extract the validation logic into a private method.
-
-###Current Code###
-public PersonResponse updatePerson(Long id, UpdatePersonRequest request) {
-    Person person = repository.findById(id).orElse(null);
-    if (person == null) {
-        throw new EntityNotFoundException("Person not found: " + id);
-    }
-    if (request.firstName() == null || request.firstName().isBlank()) {
-        throw new ValidationException("firstName is required");
-    }
-    if (request.lastName() == null || request.lastName().isBlank()) {
-        throw new ValidationException("lastName is required");
-    }
-    person.setFirstName(request.firstName());
-    person.setLastName(request.lastName());
-    Person saved = repository.save(person);
-    return mapper.toResponse(saved);
-}
-
-###Constraints###
-- Keep the method signature unchanged
-- Use orElseThrow() instead of orElse(null)
-- Extract validation into: private void validate(UpdatePersonRequest)
-- Maintain existing exception types
-
-###Output###
-Show only the refactored code, no explanations.
-```
-
-### 4. Chain-of-Thought (Principle 12)
-
-**Scenario:** Debugging a failing integration test.
-
-```
-The following integration test is failing with
-"expected 200 but got 400". Think step by step:
-
-1. Read the test setup -- what data is being prepared?
-2. Read the request being sent -- does it match the
-   controller's @Valid constraints?
-3. Check the DTO record -- does the compact canonical
-   constructor impose additional validation?
-4. Check the service layer -- are there business rule
-   validations that could reject the input?
-5. After analyzing all layers, explain the root cause
-   and provide the fix.
-
-@Test
-void createPerson_validInput_returns200() {
-    var request = new CreatePersonRequest("", "Smith", Sex.MALE);
-    mockMvc.perform(post("/api/persons")
-            .contentType(APPLICATION_JSON)
-            .content(objectMapper.writeValueAsString(request)))
-        .andExpect(status().isOk());
-}
-```
-
-Without CoT, the model might guess. With CoT, it will trace through
-the layers and identify that the empty `firstName` triggers the
-`@NotBlank` validation (or the compact constructor check).
-
-### 5. Output Primers (Principle 20)
-
-**Scenario:** Generating a Spring configuration class.
-
-```
-Generate a Spring Boot configuration class that sets up a
-RestTemplate with connection pooling, timeouts, and error
-handling for calling an external API.
-
-Package: com.example.myservice.config
-
-@Slf4j
-@Configuration
-public class RestTemplateConfig {
-```
-
-The model will continue from the provided class stub, producing
-code that matches your package structure and annotation style.
-
-### 6. Few-Shot Prompting (Principle 7)
-
-**Scenario:** Generating exception handler methods.
-
-```
-Generate @ExceptionHandler methods for the given exception types.
-Follow the pattern shown in the examples below.
-
-Example 1:
-  Exception: EntityNotFoundException
-  Handler:
-    @ExceptionHandler(EntityNotFoundException.class)
-    @ResponseStatus(HttpStatus.NOT_FOUND)
-    public ErrorResponse handleNotFound(EntityNotFoundException ex) {
-        log.warn("Entity not found: {}", ex.getMessage());
-        return new ErrorResponse("NOT_FOUND", ex.getMessage());
-    }
-
-Example 2:
-  Exception: ValidationException
-  Handler:
-    @ExceptionHandler(ValidationException.class)
-    @ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-    public ErrorResponse handleValidation(ValidationException ex) {
-        log.warn("Validation failed: {}", ex.getMessage());
-        return new ErrorResponse("VALIDATION_ERROR", ex.getMessage());
-    }
-
-Now generate handlers for:
-  - ConflictException (409)
-  - RateLimitException (429)
-  - ExternalServiceException (502)
-```
-
-The model will mirror the logging pattern, return type, and
-annotation style from the examples.
-
-### 7. Explicit Requirements (Principle 9)
-
-**Scenario:** Generating a repository interface.
-
-```
-Your task is to create a PersonRepository interface.
-
-You MUST:
-- Extend CrudRepository<Person, Long>
-- Annotate with @Repository
-- Include findByEmail(String email) returning Optional<Person>
-- Include findAllByStatus(PersonStatus status) returning List<Person>
-- Include a @Query method for full-text search on firstName and lastName
-- Use named parameters (:param) in all @Query annotations
-- Add Javadoc on every method
-
-You MUST NOT:
-- Use native queries
-- Return raw entity lists without Optional wrapping for single results
-- Add pagination (it will be added in a separate PR)
-```
-
-### 8. Asking for Questions First (Principle 14)
-
-**Scenario:** Implementing a notification feature.
-
-```
-I need to add email notifications when a person's status changes.
-Before writing any code, ask me questions to clarify the requirements.
-
-Ask about:
-- Which status transitions trigger notifications?
-- Should notifications be synchronous or async (Spring Events)?
-- What email provider are we using (SMTP, SendGrid, SES)?
-- Should we store notification history in the database?
-- What should happen if the email fails to send?
-- Are there any rate limiting requirements?
-- Should the email template be externalized?
-
-Only start implementing after I answer all your questions.
-```
-
-### 9. Role Assignment (Principle 16)
-
-**Scenario:** Different roles produce different results for the
-same code review request.
-
-```
-# Security reviewer
-You are a senior application security engineer specializing in
-OWASP Top 10 vulnerabilities in Java/Spring applications.
-Review PersonController.java for security issues only.
-
-# Performance reviewer
-You are a performance engineer specializing in JVM tuning and
-Spring Boot optimization. Review PersonController.java for
-performance bottlenecks, memory allocation patterns, and
-opportunities to reduce latency.
-
-# Architecture reviewer
-You are a software architect enforcing Clean Architecture
-principles. Review PersonController.java for layer violations,
-coupling issues, and SOLID principle adherence.
-```
-
-Each role produces a fundamentally different review even when
-given the same file.
-
-### 10. Be Direct (Principle 1)
-
-**Scenario:** Requesting a mapper class.
-
-```
-# Indirect (wastes tokens)
-Hi! Could you please help me create a mapper? I was wondering if
-you could use MapStruct for it. If it's not too much trouble, could
-you also handle the null case? That would be really helpful. Thanks
-so much in advance!
-
-# Direct (same request, fewer tokens, same quality)
-Create a MapStruct mapper for Person <-> PersonResponse.
-Use @Mapper(componentModel = "spring").
-Handle null source by returning null.
-Include toResponse(Person) and toEntity(CreatePersonRequest).
-```
-
-### 11. Repeat Critical Constraints (Principle 18)
-
-**Scenario:** The model keeps returning entities instead of DTOs.
-
-```
-Generate CRUD endpoints for the Order entity.
-
-IMPORTANT: Every endpoint returns an OrderResponse record.
-The controller MUST NOT return Order entities.
-All response types are DTO records.
-Do not expose entity classes through the REST API.
-Response type: OrderResponse (record), never Order (entity).
-```
-
-Repeating the constraint in different phrasings makes it much
-harder for the model to ignore.
-
-### 12. Task Decomposition (Principle 3)
-
-**Scenario:** Adding a search feature with filtering, pagination,
-and sorting across the full stack.
-
-Instead of one massive prompt, use a chain:
-
-```
-Prompt 1 (Schema):
-"Add a database index for searching persons by first_name,
- last_name, and email. Produce a Liquibase changelog."
-
-Prompt 2 (Repository):
-"Add a search method to PersonRepository that accepts optional
- firstName, lastName, and email filters with pagination.
- Use Spring Data JDBC @Query with dynamic WHERE clauses."
-
-Prompt 3 (Service):
-"Create a PersonSearchService that accepts a SearchPersonRequest
- record, delegates to the repository search method, and returns
- Page<PersonResponse>."
-
-Prompt 4 (Controller):
-"Add GET /api/persons/search to PersonController. Accept query
- parameters: firstName, lastName, email, page, size, sort.
- Delegate to PersonSearchService. Use OpenAPI @Parameter annotations."
-
-Prompt 5 (Test):
-"Write integration tests for the search endpoint covering:
- no filters (returns all), single filter, combined filters,
- pagination, and empty results."
-```
-
-### 13. CoT + Few-Shot Combined (Principle 19)
-
-**Scenario:** Analyzing a complex SQL query for optimization.
-
-```
-Analyze the following SQL query for optimization opportunities.
-Think step by step through each aspect, following the example format.
-
-Example:
-  Query: SELECT * FROM orders WHERE customer_id = 123
-  Step 1 (Selectivity): SELECT * fetches all columns -- wasteful
-  Step 2 (Indexing): customer_id likely needs an index
-  Step 3 (Result): Replace * with needed columns; add index on customer_id
-
-Now analyze:
-  SELECT p.*, o.*, oi.*
-  FROM person p
-  LEFT JOIN orders o ON o.person_id = p.id
-  LEFT JOIN order_items oi ON oi.order_id = o.id
-  WHERE p.status = 'ACTIVE'
-  ORDER BY o.created_at DESC
-```
-
-### 14. Multi-File Generation (Principle 23)
-
-**Scenario:** Scaffolding a complete audit logging feature.
-
-```
-Generate the following files for an audit logging feature.
-Produce each file in order with the full package declaration
-and all imports. Mark each file with its relative path.
-
-1. `domain/AuditEvent.java` -- entity with: id, entityType,
-   entityId, action (enum: CREATE/UPDATE/DELETE), payload (JSON),
-   performedBy, performedAt
-
-2. `dto/AuditEventResponse.java` -- response record
-
-3. `repository/AuditEventRepository.java` -- with findByEntityTypeAndEntityId
-   and findByPerformedAtBetween
-
-4. `service/AuditService.java` -- interface with log() and query() methods
-
-5. `service/impl/AuditServiceImpl.java` -- implementation using
-   @Async for non-blocking audit writes
-
-6. `aspect/AuditAspect.java` -- AOP aspect using @AfterReturning
-   on all @Service methods annotated with @Auditable
-
-7. `annotation/Auditable.java` -- custom annotation with
-   entityType parameter
-
-8. `controller/AuditController.java` -- GET /api/audit with
-   filters for entityType, dateRange, performedBy
-
-Each file MUST use Java 21 features where applicable (records,
-pattern matching, text blocks for any multi-line strings).
-```
+**Examples:** [14 principles applied](08-prompt-examples.md#principles-applied)
 
 ---
 
@@ -859,192 +304,19 @@ or command:
 5. OpenAI. *Prompt Engineering Guide*.
    [platform.openai.com/docs/guides/prompt-engineering](https://platform.openai.com/docs/guides/prompt-engineering)
 
+
 ## Prompting Anti-Patterns for Java Developers
 
-Even experienced developers fall into prompting traps that produce mediocre
-output. Recognizing these anti-patterns is as important as learning the good
-techniques. Each pattern below shows a real before/after transformation.
+Common mistakes that produce mediocre output. Full before/after pairs: [08-prompt-examples.md § Anti-Patterns](08-prompt-examples.md#anti-patterns)
 
-### Anti-Pattern 1: Vague Task Description
-
-The most common mistake. Vague prompts force the model to guess your intent,
-architecture, and conventions.
-
-```
-❌ BAD:
-Make this service better.
-
-✅ GOOD:
-Refactor PersonService to use Java records for all DTOs, keeping
-backward compatibility with existing JSON contracts. Replace the
-mutable PersonDto class with an immutable CreatePersonRequest record
-and a PersonResponse record. Ensure Jackson deserialization still
-works for clients sending the old field names by adding
-@JsonProperty aliases where needed.
-```
-
-Why it matters: "better" is subjective. The model might improve naming,
-add logging, rewrite algorithms, or do something you never intended.
-A specific task produces a specific result.
-
-### Anti-Pattern 2: Missing Architecture Context
-
-Asking the AI to create a component without specifying where it fits in
-your architecture leads to code that violates your layer boundaries.
-
-```
-❌ BAD:
-Create a service that sends email notifications when a person is updated.
-
-✅ GOOD:
-Create a PersonNotificationService in the com.example.myservice.service
-package. Our architecture uses layered design:
-- Controllers → Services → Repositories (no skipping layers)
-- Services inject other Service interfaces, never Repositories of
-  other aggregates
-- Async operations use Spring @Async with a custom TaskExecutor
-
-The PersonNotificationService should:
-1. Be triggered by PersonService.update() via a Spring ApplicationEvent
-2. Send emails asynchronously using the existing EmailGateway interface
-3. Not block the update transaction
-```
-
-Why it matters: without architecture context, the model might inject
-the `PersonRepository` directly, use `@Autowired` field injection, or
-put business logic in the wrong layer.
-
-### Anti-Pattern 3: Overloading a Single Prompt
-
-Asking for everything in one go overwhelms the model's attention and
-produces inconsistencies across the generated files.
-
-```
-❌ BAD:
-Generate the Person entity, CreatePersonRequest DTO, PersonResponse DTO,
-PersonMapper using MapStruct, PersonRepository, PersonService interface,
-PersonServiceImpl, PersonController with OpenAPI annotations, and unit
-tests for the service with at least 80% coverage. Use Java 21 records,
-Spring Data JDBC, and PostgreSQL.
-
-✅ GOOD (decompose into a chain):
-Prompt 1: "Generate the CreatePersonRequest and PersonResponse records
-           with Jakarta validation annotations."
-Prompt 2: "Based on the DTOs above, create the Person entity for
-           Spring Data JDBC with @Table annotation."
-Prompt 3: "Create the PersonMapper using MapStruct that converts between
-           the entity and the DTOs from the previous step."
-Prompt 4: "Create the PersonRepository extending CrudRepository<Person, Long>."
-Prompt 5: "Create PersonService interface and PersonServiceImpl that uses
-           the mapper and repository from previous steps."
-Prompt 6: "Create PersonController with OpenAPI annotations that delegates
-           to PersonService."
-Prompt 7: "Write unit tests for PersonServiceImpl using the BDD
-           given/when/then structure."
-```
-
-Why it matters: the model's output quality degrades as prompt complexity
-increases. Each focused prompt gets the model's full attention. See
-Section 3's Least-to-Most technique for the formal approach.
-
-### Anti-Pattern 4: Ignoring the Output Format
-
-Not specifying the test framework, assertion library, or structural
-expectations leads to output you have to manually reformat.
-
-```
-❌ BAD:
-Generate tests for PersonService.
-
-✅ GOOD:
-Generate JUnit 5 tests for PersonService using:
-- @ExtendWith(MockitoExtension.class) for mocking
-- AssertJ assertions (assertThat, assertThatThrownBy)
-- @DisplayName with human-readable descriptions
-- BDD structure: // given, // when, // then sections
-- Naming convention: methodName_stateUnderTest_expectedBehavior
-
-Cover these scenarios for the create() method:
-1. Valid input → returns PersonResponse with generated id
-2. Null request → throws IllegalArgumentException
-3. Duplicate email → throws ConflictException
-```
-
-Why it matters: "generate tests" might produce TestNG tests with
-Hamcrest matchers in a flat structure with auto-generated names.
-Specifying the format means the output is merge-ready.
-
-### Anti-Pattern 5: Not Providing Error Context
-
-Pasting an error message without the stack trace, relevant code, or
-environment context makes the model guess at the root cause.
-
-```
-❌ BAD:
-I'm getting a NullPointerException. Fix it.
-
-✅ GOOD:
-I'm getting a NullPointerException on line 42 of PersonServiceImpl.java
-when calling personMapper.toResponse(saved).
-
-Stack trace:
-  java.lang.NullPointerException: Cannot invoke "PersonMapper.toResponse(Person)"
-  because "this.personMapper" is null
-  at com.example.myservice.service.impl.PersonServiceImpl.create(PersonServiceImpl.java:42)
-
-Relevant code:
-  @Service
-  public class PersonServiceImpl implements PersonService {
-      private final PersonRepository repository;
-      private PersonMapper personMapper;  // <-- not injected
-
-      public PersonServiceImpl(PersonRepository repository) {
-          this.repository = repository;
-      }
-  }
-
-Environment: Spring Boot 3.5, Java 21, MapStruct 1.5.5, using
-constructor injection. The mapper is annotated with
-@Mapper(componentModel = "spring").
-```
-
-Why it matters: with full context, the model immediately identifies
-that `personMapper` is declared but not injected through the constructor.
-Without context, it might suggest adding a null check instead of fixing
-the injection.
-
-### Anti-Pattern 6: Asking for Opinions Instead of Decisions
-
-Open-ended questions produce open-ended answers. Decision-framed
-questions produce actionable recommendations.
-
-```
-❌ BAD:
-What do you think about our error handling approach?
-
-✅ GOOD:
-Compare these two error-handling strategies for our Spring Boot REST API
-and recommend one with rationale:
-
-Option A: @ControllerAdvice with @ExceptionHandler methods that return
-ErrorResponse records, one handler per exception type.
-
-Option B: A single HandlerExceptionResolver that maps exception classes
-to HTTP status codes via a configuration Map<Class, HttpStatus>.
-
-Evaluation criteria:
-1. Maintainability as exception types grow from 5 to 20
-2. Testability in isolation
-3. Consistency of error response format
-4. Spring Boot 3.5 best practices
-
-Recommend Option A or B (or a hybrid) with a concrete rationale for each
-criterion.
-```
-
-Why it matters: "what do you think" invites a wishy-washy discussion.
-Structured comparison with explicit criteria produces a decision you
-can act on.
+| Anti-pattern | Symptom |
+|---|---|
+| Vague task description | Model guesses intent and architecture |
+| Missing architecture context | Layer violations, wrong injection style |
+| Overloading a single prompt | Inconsistent files, attention dilution |
+| Ignoring output format | Wrong test framework or structure |
+| Not providing error context | Model guesses root cause |
+| Opinions instead of decisions | Wishy-washy, non-actionable answers |
 
 ---
 
@@ -1164,7 +436,7 @@ prompt-library/                        ← standalone repo
     └── code-review.yaml
 ```
 
-Each skill follows the same `SKILL.md` format from Section 9. The
+Each skill follows the same `SKILL.md` format from Section 10. The
 `tests/` directory uses promptfoo configurations from Section 7 to run
 golden test sets against the shared prompts.
 
@@ -1631,7 +903,7 @@ to database conventions to CI rules.
 ignore rules buried in the center. Changes to one section risk breaking
 unrelated behavior (Section 7, Section 2).
 
-**Fix:** Split into composable skills (Section 9). Keep
+**Fix:** Split into composable skills (Section 10). Keep
 AGENTS.md under ~40 lines for cross-cutting rules. Move domain-specific
 instructions into focused skills.
 
@@ -1656,7 +928,7 @@ technology choices in global skills cause incorrect output in projects
 that use a different stack.
 
 **Fix:** Keep global skills technology-agnostic. Use template skills
-(Section 9) or override patterns for stack-specific
+(Section 10) or override patterns for stack-specific
 rules. Alternatively, use direnv (Section 2.5) to switch skill sets
 by project directory.
 
@@ -1824,10 +1096,10 @@ with practical Java/Spring Boot examples.
 
 ## Next Steps
 
-- Apply these techniques to your existing `AGENTS.md` (Section 8)
-- Add few-shot examples to your skills (Section 9)
-- Rewrite one command using CO-STAR (Section 10)
+- Apply these techniques to your existing `AGENTS.md` (Section 10)
+- Add few-shot examples to your skills (Section 10)
+- Rewrite one command using CO-STAR (Section 11)
 - Create a `prompt-library` repo and link global skills with GNU Stow or chezmoi
 - Once prompts fail or drift, see [Section 7: Prompt Optimization](07-prompt-optimization.md)
   for debugging, golden test sets, and promptfoo evaluations
-- For team-wide sharing, see [Section 15: Team Collaboration](15-team-collaboration.md)
+- For team-wide sharing, see [Section 16: Team Collaboration](16-team-collaboration.md)

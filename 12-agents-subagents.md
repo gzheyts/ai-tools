@@ -1,4 +1,4 @@
-# Section 11: Agents & Subagents -- Orchestrating Specialists
+# Section 13: Agents & Subagents -- Orchestrating Specialists
 
 An **agent** is a specialist AI persona you explicitly summon to handle
 complex, multi-step tasks. While a skill is a "verb" (one action) and a
@@ -277,7 +277,7 @@ silently overwrites the first — one agent's changes are lost without any error
 
 **What happens:** The agent runs the same failing command (e.g. `mvn test`) three or
 more times without changing state. No new information enters the loop; token cost grows
-quadratically with each step. See [12-agent-sessions.md](12-agent-sessions.md) for the token
+quadratically with each step. See [13-agent-sessions.md](13-agent-sessions.md) for the token
 accumulation mechanics.
 
 **Recovery:** Interrupt the agent. Send a stop message:
@@ -562,10 +562,10 @@ from parallel work, use subagents.
 
 ## Next Section
 
-Proceed to [Section 12: Agent Sessions](12-agent-sessions.md) to learn
+Proceed to [Section 13: Agent Sessions](13-agent-sessions.md) to learn
 session lifecycle, child sessions, compaction, and cross-session handoff.
 
 ### Further Reading
 
-- [14-java-production-stack.md](14-java-production-stack.md) — Java 21, Spring Boot, database, and DevOps workflows
+- [15-java-production-stack.md](15-java-production-stack.md) — Java 21, Spring Boot, database, and DevOps workflows
 - [opencode-agent-patterns/README.md](opencode-agent-patterns/) — OpenCode-specific orchestration: Plan/Build primaries, Explore/General/Scout, worked workflows

@@ -1,10 +1,10 @@
-# Section 12: Agent Sessions
+# Section 14: Agent Sessions
 
 A **session** is a single conversation thread with its own isolated context window.
 Sessions are stateless between conversations — the AI has no memory of prior sessions
 unless you explicitly re-inject context (see [Section 2: How AI Assistants Work](02-how-ai-assistants-work.md)).
 
-Related: [Section 11: Agents & Subagents](11-agents-subagents.md) — orchestration patterns ·
+Related: [Section 12: Agents & Subagents](12-agents-subagents.md) — orchestration patterns ·
 [Section 6: Context](06-context.md) — context window fundamentals ·
 [opencode-agent-patterns/](opencode-agent-patterns/) — OpenCode-specific session mechanics
 
@@ -253,7 +253,7 @@ Brief reference:
 
 ## Next Section
 
-Proceed to [Section 13: MCP Servers](13-mcp-servers.md) to learn how to
+Proceed to [Section 14: MCP Servers](14-mcp-servers.md) to learn how to
 extend your AI assistant with external tools and data sources via the
 Model Context Protocol.
 
@@ -261,5 +261,5 @@ Model Context Protocol.
 
 - [Section 2: How AI Assistants Work](02-how-ai-assistants-work.md) — agent loop, stateless sessions
 - [Section 6: Context](06-context.md) — context window theory, token budget, context rot
-- [Section 11: Agents & Subagents](11-agents-subagents.md) — orchestration patterns, phase gates
+- [Section 12: Agents & Subagents](12-agents-subagents.md) — orchestration patterns, phase gates
 - [opencode-agent-patterns/README.md](opencode-agent-patterns/) — OpenCode-specific session mechanics, `steps` / `doom_loop` config, worked workflows

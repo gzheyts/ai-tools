@@ -1,4 +1,4 @@
-# Section 10: Custom Slash Commands
+# Section 12: Custom Slash Commands
 
 Custom commands are markdown files that you trigger by typing `/command-name`
 in your AI assistant's chat. They are the fastest way to automate repetitive
@@ -537,5 +537,5 @@ Usage:
 
 ## Next Section
 
-Proceed to [Section 11: Agents & Subagents](11-agents-subagents.md) to learn
+Proceed to [Section 12: Agents & Subagents](12-agents-subagents.md) to learn
 how to orchestrate multiple specialist AI personas.
